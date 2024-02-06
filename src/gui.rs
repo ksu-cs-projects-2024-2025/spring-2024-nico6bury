@@ -1,6 +1,5 @@
-use std::default;
 
-use fltk::{app::{self, App, Receiver, Sender}, button::Button, dialog, enums::{FrameType, Shortcut}, group::{Group, Tabs}, menu::{self, SysMenuBar}, prelude::{GroupExt, MenuExt, WidgetBase, WidgetExt}, window::Window};
+use fltk::{app::{self, App, Receiver, Sender}, button::Button, enums::{FrameType, Shortcut}, group::{Group, Tabs}, menu::{self, SysMenuBar}, prelude::{GroupExt, MenuExt, WidgetExt}, window::Window};
 
 use self::gui_utils::{get_default_menu_height, get_default_tab_padding, get_default_win_height, get_default_win_width};
 
