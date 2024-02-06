@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 fltk = "1.4.24"
 fltk-theme = "0.7.2"
+rusqlite = { version = "0.30.0", features = ["bundled"] }
