@@ -36,6 +36,15 @@ MVP stuff:
 - if both rooms and caves, then generate rooms and caves separately, then allow user to choose where room-based structures intersect with caves
 	- after this, we'll have to determine where caves connect with rooms, and then turn those connections into either normal or secret doors
 
+## Brainstorm tabs to include
+- tab for defining input map for cave
+	- include controls for number of levels, maybe grid shows one level at a time, and you can flip through them
+- tab for defining room map for rooms
+	- similar level control as for caves
+- tab for defining settings for room and cave generation plus misc settings
+- tab for showing output image, drawn on canvas, but held within scrollable element so you can zoom in maybe
+- tab for defining where cave map should be in relation to rooms, or maybe just lets you place room and cave maps in a larger space and determines connections for all
+
 let's expand/break down stuff
 
 # basic gui in rust that allows you to generate a map
