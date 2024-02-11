@@ -16,8 +16,11 @@ pub struct GUI {
 	pub msg_receiver: Receiver<String>,
 	top_menu: SysMenuBar,
 	tab_container: Tabs,
-	tab_group1: Group,
-	tab_group2: Group,
+	gen_setting_tab: Group,
+	cave_gen_tab: Group,
+	room_gen_tab: Group,
+	multi_gen_tab: Group,
+	output_img_tab: Group,
 }//end struct GUI
 
 impl Default for GUI {
@@ -30,14 +33,20 @@ impl Default for GUI {
 			msg_receiver: r,
 			top_menu: SysMenuBar::default(),
 			tab_container: Tabs::default(),
-			tab_group1: Group::default(),
-			tab_group2: Group::default(),
+			gen_setting_tab: Group::default(),
+			cave_gen_tab: Group::default(),
+			room_gen_tab: Group::default(),
+			multi_gen_tab: Group::default(),
+			output_img_tab: Group::default(),
 		};//end struct construction
 		gui.main_window.end();
 		gui.top_menu.end();
 		gui.tab_container.end();
-		gui.tab_group1.end();
-		gui.tab_group2.end();
+		gui.gen_setting_tab.end();
+		gui.cave_gen_tab.end();
+		gui.room_gen_tab.end();
+		gui.multi_gen_tab.end();
+		gui.output_img_tab.end();
 		gui.initialize();
 		return gui;
 	}//end default()
@@ -114,26 +123,51 @@ impl GUI {
 		self.main_window.add(&self.tab_container);
 
 		// first tab settings
-		self.tab_group1 = Group::default()
+		self.gen_setting_tab = Group::default()
 			.with_pos(0, self.tab_container.y() + get_default_tab_padding())
 			.with_size(self.tab_container.width(), self.tab_container.height())
-			.with_label("tab1");
-		self.tab_group1.end();
-		self.tab_container.add(&self.tab_group1);
+			.with_label("General Settings");
+		self.gen_setting_tab.end();
+		self.tab_container.add(&self.gen_setting_tab);
 
 		let test_button = Button::default()
 			.with_size(50, 50)
 			.with_pos(100, 100)
 			.with_label("test button in tab 1");
-		self.tab_group1.add(&test_button);
+		self.gen_setting_tab.add(&test_button);
 
 		// second tab settings
-		self.tab_group2 = Group::default()
+		self.cave_gen_tab = Group::default()
 			.with_pos(0, self.tab_container.y() + get_default_tab_padding())
 			.with_size(self.tab_container.width(), self.tab_container.height())
-			.with_label("tab2");
-		self.tab_group2.end();
-		self.tab_container.add(&self.tab_group2);
+			.with_label("Cave Generation");
+		self.cave_gen_tab.end();
+		self.tab_container.add(&self.cave_gen_tab);
+
+		// third tab settings
+		self.room_gen_tab = Group::default()
+			.with_pos(0, self.tab_container.y() + get_default_tab_padding())
+			.with_size(self.tab_container.width(), self.tab_container.height())
+			.with_label("Structure Generation");
+		self.room_gen_tab.end();
+		self.tab_container.add(&self.room_gen_tab);
+
+		// fourth tab settings
+		self.multi_gen_tab = Group::default()
+			.with_pos(0, self.tab_container.y() + get_default_tab_padding())
+			.with_size(self.tab_container.width(), self.tab_container.height())
+			.with_label("Relative Placement");
+		self.multi_gen_tab.end();
+		self.tab_container.add(&self.multi_gen_tab);
+
+		// fifth tab settings
+		self.output_img_tab = Group::default()
+			.with_pos(0, self.tab_container.y() + get_default_tab_padding())
+			.with_size(self.tab_container.width(), self.tab_container.height())
+			.with_label("Output");
+		self.output_img_tab.end();
+		self.tab_container.add(&self.output_img_tab);
+
 	}//end initialize_tabs(&mut self)
 
 	/// # switch_tab(&mut self, tab_idx)
@@ -151,20 +185,36 @@ impl GUI {
 
 		match tab_idx {
 			0 => {
-				if cur_vis.is_same(&self.tab_group1) {return;}
-				self.tab_container.set_value(&self.tab_group1).expect("Should be able to set vis tab.");
+				if cur_vis.is_same(&self.gen_setting_tab) {return;}
+				self.tab_container.set_value(&self.gen_setting_tab).expect("Should be able to set vis tab.");
 			},
 			1 => {
-				if cur_vis.is_same(&self.tab_group2) {return;}
-				self.tab_container.set_value(&self.tab_group2).expect("Should be able to set vis tab.");
+				if cur_vis.is_same(&self.cave_gen_tab) {return;}
+				self.tab_container.set_value(&self.cave_gen_tab).expect("Should be able to set vis tab.");
+			},
+			2 => {
+				if cur_vis.is_same(&self.room_gen_tab) {return;}
+				self.tab_container.set_value(&self.room_gen_tab).expect("Should be able to set vis tab.");
+			},
+			3 => {
+				if cur_vis.is_same(&self.multi_gen_tab) {return;}
+				self.tab_container.set_value(&self.multi_gen_tab).expect("Should be able to set vis tab.");
+			},
+			4 => {
+				if cur_vis.is_same(&self.output_img_tab) {return;}
+				self.tab_container.set_value(&self.output_img_tab).expect("Should be able to set vis tab.");
 			},
 			_ => {
 				println!("Unsupported tab index {}", tab_idx);
 			},
 		}//end matching desired tab index
 
-		self.tab_group1.redraw();
-		self.tab_group2.redraw();
+		self.tab_container.redraw();
+		self.gen_setting_tab.redraw();
+		self.cave_gen_tab.redraw();
+		self.room_gen_tab.redraw();
+		self.multi_gen_tab.redraw();
+		self.output_img_tab.redraw();
 	}//end switch_tab(&mut self, tab_idx)
 
 	/// # show(&mut self)
