@@ -8,7 +8,7 @@ MVP stuff:
 - on generating dungeons with multiple levels, could have controls to determine what type of generation to use on different levels
 
 
-## how to represent maps, in program + in files/export
+## how to represent maps, in program + in files/export, v1
 - so, I think the way things are represented should potentially different depending on whether we're generating caves or rooms
 - if caves, then we should use a similar method to cave layout with schema paper
 	- use initial sketch on something like several 10x10 tiles
@@ -35,6 +35,16 @@ MVP stuff:
 		- we should maybe also have functions that bias towards looping corridors, but that can come later
 - if both rooms and caves, then generate rooms and caves separately, then allow user to choose where room-based structures intersect with caves
 	- after this, we'll have to determine where caves connect with rooms, and then turn those connections into either normal or secret doors
+
+## cave map process v2
+- have structure-based input map
+- user can run CA with specified parameters
+- user can change number of levels, change level displayed
+- how does exit marking work?
+	- have green pixels show up on map
+	- have list of exit/entrance points show up in list to the size
+		- from the list, you can remove one, or you can place a green pixel with brush
+		- you can also see, in the list, whether the exit goes up or down, as well as how many floors
 
 ## Brainstorm tabs to include
 - tab for defining input map for cave
