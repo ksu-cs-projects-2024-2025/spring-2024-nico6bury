@@ -1,7 +1,7 @@
 
 use fltk::{app::{self, App, Receiver, Sender}, button::Button, enums::{FrameType, Shortcut}, group::{Group, Tabs}, menu::{self, SysMenuBar}, prelude::{GroupExt, MenuExt, WidgetExt}, window::Window};
 
-use self::gui_utils::{get_default_menu_height, get_default_tab_padding, get_default_win_height, get_default_win_width};
+use self::gui_utils::{get_default_menu_height, get_default_tab_padding, get_default_win_height, get_default_win_width, FlexGrid};
 
 mod gui_utils;
 
@@ -15,12 +15,22 @@ pub struct GUI {
 	/// receives messages for events
 	pub msg_receiver: Receiver<String>,
 	top_menu: SysMenuBar,
+
+	/// contains all the tabs
 	tab_container: Tabs,
+	/// tab contains general settings for generation and what to use
 	gen_setting_tab: Group,
+	/// tab contains settings for cave generation, allows specification of input map
 	cave_gen_tab: Group,
+	/// tab contains settings for room-based structure generation, allows specification of room map
 	room_gen_tab: Group,
+	/// tab contains settings for where structures should be in relation to each other
 	multi_gen_tab: Group,
+	/// tab contains output image of map, displayed using some sort of canvas drawing in all likelihood
 	output_img_tab: Group,
+
+	/// this flexgrid will display the cave input
+	cave_input_map: FlexGrid,
 }//end struct GUI
 
 impl Default for GUI {
@@ -38,6 +48,7 @@ impl Default for GUI {
 			room_gen_tab: Group::default(),
 			multi_gen_tab: Group::default(),
 			output_img_tab: Group::default(),
+			cave_input_map: FlexGrid::default(),
 		};//end struct construction
 		gui.main_window.end();
 		gui.top_menu.end();
@@ -47,6 +58,7 @@ impl Default for GUI {
 		gui.room_gen_tab.end();
 		gui.multi_gen_tab.end();
 		gui.output_img_tab.end();
+		gui.cave_input_map.end();
 		gui.initialize();
 		return gui;
 	}//end default()
@@ -169,6 +181,17 @@ impl GUI {
 		self.tab_container.add(&self.output_img_tab);
 
 	}//end initialize_tabs(&mut self)
+
+	/// # initialize_cave_gen_tab(&mut self)
+	/// 
+	/// This function sets up the initial controls in the cave gen tab.  
+	/// This generally includes the following:  
+	/// - FlexGrid input map of buttons for user to use
+	/// - options to change the actual size of input map
+	/// - options to change resolution of input map
+	fn initialize_cave_gen_tab(&mut self) {
+
+	}
 
 	/// # switch_tab(&mut self, tab_idx)
 	/// 
