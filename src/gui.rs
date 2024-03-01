@@ -1,9 +1,10 @@
 
-use fltk::{app::{self, App, Receiver, Sender}, button::Button, enums::{FrameType, Shortcut}, group::{Group, Tabs}, menu::{self, SysMenuBar}, prelude::{GroupExt, MenuExt, WidgetExt}, window::Window};
+use fltk::{app::{self, App, Receiver, Sender}, button::Button, enums::{FrameType, Shortcut}, frame::Frame, group::{Group, Scroll, Tabs}, menu::{self, SysMenuBar}, prelude::{DisplayExt, GroupExt, MenuExt, WidgetBase, WidgetExt, WidgetType}, text::{TextBuffer, TextDisplay, TextEditor}, window::Window};
 
-use self::gui_utils::{get_default_menu_height, get_default_tab_padding, get_default_win_height, get_default_win_width, FlexGrid};
+use self::{cave_gen_group::CaveGenGroup, gui_utils::{get_default_menu_height, get_default_tab_padding, get_default_win_height, get_default_win_width, FlexGrid}};
 
 mod gui_utils;
+mod cave_gen_group;
 
 pub struct GUI {
 	/// application struct everything runs in
@@ -21,16 +22,13 @@ pub struct GUI {
 	/// tab contains general settings for generation and what to use
 	gen_setting_tab: Group,
 	/// tab contains settings for cave generation, allows specification of input map
-	cave_gen_tab: Group,
+	cave_gen_tab: CaveGenGroup,
 	/// tab contains settings for room-based structure generation, allows specification of room map
 	room_gen_tab: Group,
 	/// tab contains settings for where structures should be in relation to each other
 	multi_gen_tab: Group,
 	/// tab contains output image of map, displayed using some sort of canvas drawing in all likelihood
 	output_img_tab: Group,
-
-	/// this flexgrid will display the cave input
-	cave_input_map: FlexGrid,
 }//end struct GUI
 
 impl Default for GUI {
@@ -44,11 +42,10 @@ impl Default for GUI {
 			top_menu: SysMenuBar::default(),
 			tab_container: Tabs::default(),
 			gen_setting_tab: Group::default(),
-			cave_gen_tab: Group::default(),
+			cave_gen_tab: CaveGenGroup::default(),
 			room_gen_tab: Group::default(),
 			multi_gen_tab: Group::default(),
 			output_img_tab: Group::default(),
-			cave_input_map: FlexGrid::default(),
 		};//end struct construction
 		gui.main_window.end();
 		gui.top_menu.end();
@@ -58,7 +55,6 @@ impl Default for GUI {
 		gui.room_gen_tab.end();
 		gui.multi_gen_tab.end();
 		gui.output_img_tab.end();
-		gui.cave_input_map.end();
 		gui.initialize();
 		return gui;
 	}//end default()
@@ -149,12 +145,13 @@ impl GUI {
 		self.gen_setting_tab.add(&test_button);
 
 		// second tab settings
-		self.cave_gen_tab = Group::default()
+		self.cave_gen_tab = CaveGenGroup::default()
 			.with_pos(0, self.tab_container.y() + get_default_tab_padding())
 			.with_size(self.tab_container.width(), self.tab_container.height())
 			.with_label("Cave Generation");
 		self.cave_gen_tab.end();
-		self.tab_container.add(&self.cave_gen_tab);
+		self.tab_container.add(&*self.cave_gen_tab);
+		self.cave_gen_tab.initialize();
 
 		// third tab settings
 		self.room_gen_tab = Group::default()
@@ -182,17 +179,6 @@ impl GUI {
 
 	}//end initialize_tabs(&mut self)
 
-	/// # initialize_cave_gen_tab(&mut self)
-	/// 
-	/// This function sets up the initial controls in the cave gen tab.  
-	/// This generally includes the following:  
-	/// - FlexGrid input map of buttons for user to use
-	/// - options to change the actual size of input map
-	/// - options to change resolution of input map
-	fn initialize_cave_gen_tab(&mut self) {
-
-	}
-
 	/// # switch_tab(&mut self, tab_idx)
 	/// 
 	/// Switches the currently visisble tab to the specified one.  
@@ -212,8 +198,8 @@ impl GUI {
 				self.tab_container.set_value(&self.gen_setting_tab).expect("Should be able to set vis tab.");
 			},
 			1 => {
-				if cur_vis.is_same(&self.cave_gen_tab) {return;}
-				self.tab_container.set_value(&self.cave_gen_tab).expect("Should be able to set vis tab.");
+				if cur_vis.is_same(&*self.cave_gen_tab) {return;}
+				self.tab_container.set_value(&*self.cave_gen_tab).expect("Should be able to set vis tab.");
 			},
 			2 => {
 				if cur_vis.is_same(&self.room_gen_tab) {return;}
