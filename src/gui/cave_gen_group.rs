@@ -1,4 +1,4 @@
-use fltk::{button::Button, enums::FrameType, frame::Frame, group::{Group, Scroll}, prelude::{DisplayExt, GroupExt, WidgetExt}, text::{TextBuffer, TextDisplay, TextEditor}, widget_extends};
+use fltk::{button::Button, enums::{Align, FrameType}, frame::Frame, group::{Group, Scroll}, prelude::{DisplayExt, GroupExt, ValuatorExt, WidgetExt}, text::{TextBuffer, TextDisplay, TextEditor}, valuator::Counter, widget_extends};
 
 use crate::gui::gui_utils::{get_default_menu_height, get_default_tab_padding};
 
@@ -8,6 +8,8 @@ pub struct CaveGenGroup {
 	cave_canvas_frame: Frame,
 	level_cur_buf: TextBuffer,
 	level_tot_buf: TextBuffer,
+	squares_width_counter: Counter,
+	squares_height_counter: Counter,
 }//end struct CaveGenGroup
 
 impl Default for CaveGenGroup {
@@ -18,6 +20,8 @@ impl Default for CaveGenGroup {
 			cave_canvas_frame: Default::default(),
 			level_cur_buf: Default::default(),
 			level_tot_buf: Default::default(),
+			squares_width_counter: Default::default(),
+			squares_height_counter: Default::default(),
 		};
 		cave_gen_group.whole_tab_group.end();
 		cave_gen_group.cave_canvas_scroll.end();
@@ -47,7 +51,8 @@ impl CaveGenGroup {
 		let level_label_frame = Frame::default()
 			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width() + get_default_tab_padding(), self.cave_canvas_scroll.y())
 			.with_label("Level")
-			.with_size(30, 25);
+			.with_size(30, 25)
+			.with_align(Align::Center);
 		self.whole_tab_group.add(&level_label_frame);
 
 		self.level_cur_buf = TextBuffer::default();
@@ -82,6 +87,38 @@ impl CaveGenGroup {
 			.with_size(25,25)
 			.with_label("@+");
 		self.whole_tab_group.add(&level_up_btn);
+
+		// stuff for setting size/resolution of squares
+		let square_size_label = Frame::default()
+			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width() + get_default_tab_padding(), level_down_btn.y() + level_down_btn.height() + get_default_tab_padding())
+			.with_size(90, 25)
+			.with_label("Level Size (in squares)")
+			.with_align(Align::Inside);
+		self.whole_tab_group.add(&square_size_label);
+
+		self.squares_width_counter = Counter::default()
+			.with_pos(square_size_label.x(), square_size_label.y() + square_size_label.height() + get_default_tab_padding())
+			.with_size(50, 25)
+			.with_label("Width")
+			.with_align(Align::Top);
+		self.squares_width_counter.set_value(50.0);
+		self.squares_width_counter.set_minimum(3.0);
+		self.squares_width_counter.set_maximum(1000.0);
+		self.squares_width_counter.set_precision(0);
+		self.squares_width_counter.set_step(1.0, 10);
+		self.whole_tab_group.add(&self.squares_width_counter);
+
+		self.squares_height_counter = Counter::default()
+			.with_pos(self.squares_width_counter.x() + self.squares_width_counter.width() + get_default_tab_padding(), self.squares_width_counter.y())
+			.with_size(50, 25)
+			.with_label("Height")
+			.with_align(Align::Top);
+		self.squares_height_counter.set_value(50.0);
+		self.squares_height_counter.set_minimum(3.0);
+		self.squares_height_counter.set_maximum(1000.0);
+		self.squares_height_counter.set_precision(0);
+		self.squares_height_counter.set_step(1.0, 10);
+		self.whole_tab_group.add(&self.squares_height_counter);
 	}//end initialize
 }//end impl for CaveGenGroup
 
