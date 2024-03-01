@@ -13,7 +13,7 @@ pub fn get_default_win_height() -> i32 {700}
 pub fn get_default_menu_height() -> i32 {30}
 /// # default tab padding
 /// gives teh default padding amount in pixels between tabs and content
-pub fn get_default_tab_padding() -> i32 {0}
+pub fn get_default_tab_padding() -> i32 {10}
 
 fn get_default_grid_width() -> i32 {get_default_win_width() - 400}
 fn get_default_grid_height() -> i32 {get_default_win_height()-get_default_menu_height() - get_default_tab_padding() - 225}
