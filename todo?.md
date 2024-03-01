@@ -46,6 +46,74 @@ MVP stuff:
 		- from the list, you can remove one, or you can place a green pixel with brush
 		- you can also see, in the list, whether the exit goes up or down, as well as how many floors
 
+## Stream of consciousness on building gen
+- so, let's review what the articles can provide
+	- good constrained growth algos for filling a space with a floor plan/layout
+	- good ideas about separating private/public spaces, ensuring some rooms are private
+	- good ideas for ensuring maximum amount of space is used by rooms (realistic, good)
+	- good ideas for ensuring rooms are rectangular (realistic, debatable utility here)
+	- good ideas for randomly generating exterior windows/doors
+	- seems like good ideas on ensuring connectedness (realistic, might want to tweak)
+	- good ideas for determining number of rooms within an arbitrarily sized space (good, might be biased towards smaller spaces)
+- additionally, there are a few things that aren't covered by the articles
+	- very little looping passages (melan diagrams are pretty linear)
+	- examples are mostly of smaller spaces, not good examples of much larger structures
+	- no provided examples of splitting a very large structure into zones, limited number of zones (pub or priv)
+- additionally, let's review what, in general, I want for these structures (jaquasian stuff)
+- let's also maybe go over how I can get those with what the papers provide
+	- multiple entrances/exits to dungeon
+		- both articles are a little inconclusive on this, might need user help or additional work
+	- midpoint entry (enter on 1st floor, or maybe 3rd)
+		- same as before, might need user help or additional work, certainly needs user OK
+	- looping passages (squares in melan diagrams)
+		- if using connectivity stuff, should tweak settings to result in greater average connectivity within large zones
+		- might look into a CA-based approach to ensuring rooms are connected to a certain rough number of their neighborhood within X rooms
+	- multiple level connections (more than one way up or down)
+		- articles somewhat inconclusive, but rooms for this should probably be integrated into floor plans.
+		- should probably work this into hierarchical zone logic, need to consider more
+	- divided/sub-levels
+		- this is also likely a job for hierarchical zone logic, have different connectivity logic between zones to within zones
+	- nested dungeons (prob handled elsewhere)
+	- secret passages/shortcuts
+		- perhaps, based on zone, find passage with, perhaps, high connectivity and low portal num, mark portals as hidden
+		- alternatively, generate passages between zones that otherwise have little inter-zonal connectedness
+- in summary
+	- I need to come up with some zone types and also think about some standard settings for them
+	- once zones are handled, connectivity stuff is probably something to develop, CA seems promising imo
+	- exterior entrances and exits are a sticking point, maybe they can be solved by good rules for connection between zones
+	- in terms of just filling space with rooms, we're basically covered, but ensuring quality connections is the hard part
+
+### Brainstorm on generating good zones to put rooms in
+- so, one idea is to generate the zones similarly to room generation
+	- this would be good in that it simplifies generation
+	- still need to define specific zone types
+	- might need to apply rules based on zone types to ensure logical results
+	- instead of ensuring rectangularness, just use organic shape generation technique with constrained growth
+	- what do zones need to accomplish? (and maybe how?):
+		- divided/sub-levels
+			- multiple zones on level, little to not obvious connectivity between them
+		- secret passages/shortcuts
+			- likely connections between zones that are hidden
+			- define based on zone connectedness somehow
+		- multiple level connections (more than one way up/down)
+			- level connections are rooms that need to be generated within a zone
+			- might prioritize certain number of connections per zone
+			- maybe try to separate connection down from connection up (keep in separate zones?)
+			- maybe skip floors
+		- multiple entrances/exits to dungeon
+			- I'm inconclusive on what parameters make a good alternative entrance
+			- might be decided semi-randomly
+			- might prioritize zones of certain type? (zones with connection up?)
+			- maybe have things be influenced by the environment it is in
+			- maybe have stuff like the history or the different groups that created it or maintained the space
+		- midpoint entry
+			- essentially just entrance/exit to dungeon that isn't on first floor
+		- landmarking
+			- if each zone has rough theme, kinda serves as bit of landmarking for navigation
+	- brainstorm zone-types?:
+		- maybe zones are less about public/private and more about theme?
+		- have just for security level, for sublevels, maybe miniboss area?
+
 ## Brainstorm tabs to include
 - tab for defining input map for cave
 	- include controls for number of levels, maybe grid shows one level at a time, and you can flip through them
