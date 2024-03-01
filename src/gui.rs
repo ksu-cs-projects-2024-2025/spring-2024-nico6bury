@@ -195,23 +195,23 @@ impl GUI {
 		match tab_idx {
 			0 => {
 				if cur_vis.is_same(&self.gen_setting_tab) {return;}
-				self.tab_container.set_value(&self.gen_setting_tab).expect("Should be able to set vis tab.");
+				self.tab_container.set_value(&self.gen_setting_tab).expect("Should be able to set vis setting tab.");
 			},
 			1 => {
 				if cur_vis.is_same(&*self.cave_gen_tab) {return;}
-				self.tab_container.set_value(&*self.cave_gen_tab).expect("Should be able to set vis tab.");
+				self.tab_container.set_value(&*self.cave_gen_tab).expect("Should be able to set vis cave tab.");
 			},
 			2 => {
 				if cur_vis.is_same(&self.room_gen_tab) {return;}
-				self.tab_container.set_value(&self.room_gen_tab).expect("Should be able to set vis tab.");
+				self.tab_container.set_value(&self.room_gen_tab).expect("Should be able to set vis room tab.");
 			},
 			3 => {
 				if cur_vis.is_same(&self.multi_gen_tab) {return;}
-				self.tab_container.set_value(&self.multi_gen_tab).expect("Should be able to set vis tab.");
+				self.tab_container.set_value(&self.multi_gen_tab).expect("Should be able to set vis multi tab.");
 			},
 			4 => {
 				if cur_vis.is_same(&self.output_img_tab) {return;}
-				self.tab_container.set_value(&self.output_img_tab).expect("Should be able to set vis tab.");
+				self.tab_container.set_value(&self.output_img_tab).expect("Should be able to set vis output tab.");
 			},
 			_ => {
 				println!("Unsupported tab index {}", tab_idx);
