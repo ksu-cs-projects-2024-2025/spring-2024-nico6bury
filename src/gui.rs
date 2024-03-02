@@ -1,7 +1,7 @@
 
-use fltk::{app::{self, App, Receiver, Sender}, button::Button, enums::{FrameType, Shortcut}, frame::Frame, group::{Group, Scroll, Tabs}, menu::{self, SysMenuBar}, prelude::{DisplayExt, GroupExt, MenuExt, WidgetBase, WidgetExt, WidgetType}, text::{TextBuffer, TextDisplay, TextEditor}, window::Window};
+use fltk::{app::{self, App, Receiver, Sender}, button::Button, enums::{FrameType, Shortcut}, group::{Group, Tabs}, menu::{self, SysMenuBar}, prelude::{GroupExt, MenuExt, WidgetExt}, window::Window};
 
-use self::{cave_gen_group::CaveGenGroup, gui_utils::{get_default_menu_height, get_default_tab_padding, get_default_win_height, get_default_win_width, FlexGrid}};
+use self::{cave_gen_group::CaveGenGroup, gui_utils::{get_default_menu_height, get_default_tab_padding, get_default_win_height, get_default_win_width}};
 
 mod gui_utils;
 mod cave_gen_group;

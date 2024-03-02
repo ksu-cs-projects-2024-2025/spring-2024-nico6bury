@@ -32,6 +32,7 @@ pub struct FlexGrid {
 	inner_flexes: Vec<Flex>,
 }//end struct FlexGrid
 
+#[allow(dead_code)]
 impl FlexGrid {
 	/// # default()
 	/// 
