@@ -5,12 +5,12 @@ use crate::gui::gui_utils::{get_default_menu_height, get_default_tab_padding};
 pub struct CaveGenGroup {
 	whole_tab_group: Group,
 	cave_canvas_scroll: Scroll,
-	cave_canvas_frame: Frame,
-	level_cur_buf: TextBuffer,
-	level_tot_buf: TextBuffer,
-	squares_width_counter: Counter,
-	squares_height_counter: Counter,
-	squares_pixel_diameter_counter: Counter,
+	pub cave_canvas_frame: Frame,
+	pub level_cur_buf: TextBuffer,
+	pub level_tot_buf: TextBuffer,
+	pub squares_width_counter: Counter,
+	pub squares_height_counter: Counter,
+	pub squares_pixel_diameter_counter: Counter,
 }//end struct CaveGenGroup
 
 impl Default for CaveGenGroup {
@@ -135,7 +135,7 @@ impl CaveGenGroup {
 		self.squares_pixel_diameter_counter.set_step(1.0, 10);
 		self.squares_pixel_diameter_counter.set_type(CounterType::Simple);
 		self.whole_tab_group.add(&self.squares_pixel_diameter_counter);
-	}//end initialize
+	}//end initialize()
 }//end impl for CaveGenGroup
 
 widget_extends!(CaveGenGroup, Group, whole_tab_group);
