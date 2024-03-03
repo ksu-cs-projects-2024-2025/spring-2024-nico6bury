@@ -249,6 +249,9 @@ impl CaveGenGroup {
 
 		self.cave_canvas_image = Rc::from(RefCell::from(canvas_surface));
 
+		let pixel_scale = self.squares_pixel_diameter_counter.value() as i32;
+		let pixel_scale_ref = Rc::from(RefCell::from(pixel_scale));
+
 		self.cave_canvas_frame.draw( {
 			let surface = self.cave_canvas_image.clone();
 			move |f| {
@@ -262,13 +265,15 @@ impl CaveGenGroup {
 			let mut x = 0;
 			let mut y = 0;
 			let surface = self.cave_canvas_image.clone();
+			let pixel_scale_clone = pixel_scale_ref.clone();
 			move |f, ev| {
 				let surface = surface.borrow_mut();
+				let pixel_scale = pixel_scale_clone.borrow();
 				match ev {
 					Event::Push => {
 						ImageSurface::push_current(&surface);
 						set_draw_color(Color::Black);
-						set_line_style(LineStyle::Solid, 3);
+						set_line_style(LineStyle::Solid, *pixel_scale);
 						let coords = app::event_coords();
 						x = coords.0; // fefwf
 						y = coords.1;
@@ -280,7 +285,7 @@ impl CaveGenGroup {
 					Event::Drag => {
 						ImageSurface::push_current(&surface);
 						set_draw_color(Color::Black);
-						set_line_style(LineStyle::Solid, 3);
+						set_line_style(LineStyle::Solid, *pixel_scale);
 						let coords = app::event_coords();
 						draw_line(x - f.x(), y - f.y(), coords.0 - f.x(), coords.1 - f.y());
 						x = coords.0;
