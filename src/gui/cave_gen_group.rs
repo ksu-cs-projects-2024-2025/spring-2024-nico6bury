@@ -1,9 +1,9 @@
-use fltk::{app::Sender, button::Button, enums::{Align, FrameType}, frame::Frame, group::{Group, Scroll}, prelude::{DisplayExt, GroupExt, ValuatorExt, WidgetExt}, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
+use fltk::{app::Sender, button::Button, enums::{Align, Color, FrameType}, frame::Frame, group::{Column, Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ValuatorExt, WidgetExt}, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
 use crate::gui::gui_utils::{get_default_menu_height, get_default_tab_padding};
 
 pub struct CaveGenGroup {
-	whole_tab_group: Group,
+	whole_tab_group: Tile,
 	cave_canvas_scroll: Scroll,
 	pub cave_canvas_frame: Frame,
 	pub level_cur_buf: TextBuffer,
@@ -33,13 +33,27 @@ impl Default for CaveGenGroup {
 
 impl CaveGenGroup {
 	pub fn initialize(&mut self, msg_sender: &Sender<String>) {
+		// let resizable_frame = Frame::default()
+		// 	.with_pos(self.whole_tab_group.x(), self.whole_tab_group.y())
+		// 	.with_size(self.whole_tab_group.width(), self.whole_tab_group.height());
+		// self.whole_tab_group.resizable(&resizable_frame);
+		self.whole_tab_group.set_frame(FrameType::FlatBox);
+
+		// exterior group for canvas and scroll to fix border issues
+		let mut cave_canvas_group = Group::default()
+			.with_pos(0, self.whole_tab_group.y())
+			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height() / 2);
+		cave_canvas_group.end();
+		cave_canvas_group.set_frame(FrameType::FlatBox);
+		self.whole_tab_group.add(&cave_canvas_group);
+
 		// scrollable container for size-locked canvas
 		self.cave_canvas_scroll = Scroll::default()
-			.with_pos(get_default_tab_padding(), self.whole_tab_group.y() + get_default_menu_height())
-			.with_size(self.whole_tab_group.width() / 2, self.whole_tab_group.height() / 2);
+			.with_pos(cave_canvas_group.x(), cave_canvas_group.y())
+			.with_size(cave_canvas_group.width(), cave_canvas_group.height());
 		self.cave_canvas_scroll.end();
-		self.cave_canvas_scroll.set_frame(FrameType::EmbossedFrame);
-		self.whole_tab_group.add(&self.cave_canvas_scroll);
+		self.cave_canvas_scroll.set_frame(FrameType::BorderBox);
+		cave_canvas_group.add(&self.cave_canvas_scroll);
 
 		// size-locked canvas for drawing
 		self.cave_canvas_frame = Frame::default()
@@ -47,29 +61,92 @@ impl CaveGenGroup {
 			.with_size(100,100)
 			.with_label("Canvas thingy");
 		self.cave_canvas_frame.set_frame(FrameType::BorderBox);
+		self.cave_canvas_frame.set_color(Color::White);
 		self.cave_canvas_scroll.add(&self.cave_canvas_frame);
+
+		// exterior vertical flex for canvas setting stuff
+		let mut exterior_canvas_setting_flex = Flex::default()
+			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width(), self.cave_canvas_scroll.y())
+			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height());
+		exterior_canvas_setting_flex.end();
+		exterior_canvas_setting_flex.set_type(FlexType::Column);
+		exterior_canvas_setting_flex.set_frame(FrameType::BorderBox);
+		self.whole_tab_group.add(&exterior_canvas_setting_flex);
+
+		// exterior vertical flex for canvas drawing stuff
+		let mut exterior_canvas_drawing_setting_flex = Flex::default()
+			.with_pos(self.cave_canvas_scroll.x(), self.cave_canvas_scroll.y() + self.cave_canvas_scroll.height())
+			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height() / 2);
+		exterior_canvas_drawing_setting_flex.end();
+		exterior_canvas_drawing_setting_flex.set_type(FlexType::Column);
+		exterior_canvas_drawing_setting_flex.set_frame(FrameType::BorderBox);
+		self.whole_tab_group.add(&exterior_canvas_drawing_setting_flex);
+
+		// exterior vertical flex for level connections stuff
+		let mut exterior_level_connections_flex = Flex::default()
+			.with_pos(exterior_canvas_setting_flex.x() + exterior_canvas_setting_flex.width(), exterior_canvas_setting_flex.y())
+			.with_size(self.whole_tab_group.width() - (self.cave_canvas_scroll.width() + exterior_canvas_setting_flex.width()), self.whole_tab_group.height());
+		exterior_level_connections_flex.end();
+		exterior_level_connections_flex.set_type(FlexType::Column);
+		exterior_level_connections_flex.set_frame(FrameType::BorderBox);
+		self.whole_tab_group.add(&exterior_level_connections_flex);
+
+		// interior level number horizontal flex 1
+		let mut interior_level_number_hor_flex_1 = Flex::default()
+			.with_pos(exterior_canvas_setting_flex.x(), exterior_canvas_setting_flex.y())
+			.with_size(exterior_canvas_setting_flex.width(), 50);
+		interior_level_number_hor_flex_1.end();
+		interior_level_number_hor_flex_1.set_type(FlexType::Row);
+		interior_level_number_hor_flex_1.set_frame(FrameType::FlatBox);
+		exterior_canvas_setting_flex.add(&interior_level_number_hor_flex_1);
+
+		// interior level number horizontal flex 2
+		let mut interior_level_number_hor_flex_2 = Flex::default()
+			.with_pos(interior_level_number_hor_flex_1.x(), interior_level_number_hor_flex_1.y() + interior_level_number_hor_flex_1.height())
+			.with_size(interior_level_number_hor_flex_1.width(), 50);
+		interior_level_number_hor_flex_2.end();
+		interior_level_number_hor_flex_2.set_type(FlexType::Row);
+		interior_level_number_hor_flex_2.set_frame(FrameType::FlatBox);
+		exterior_canvas_setting_flex.add(&interior_level_number_hor_flex_2);
+
+		// interior canvas size horizontal flex 1
+		let mut interior_canvas_size_hor_flex_1 = Flex::default()
+			.with_pos(interior_level_number_hor_flex_2.x(), interior_level_number_hor_flex_2.y() + interior_level_number_hor_flex_2.height())
+			.with_size(interior_level_number_hor_flex_2.width(), 50);
+		interior_canvas_size_hor_flex_1.end();
+		interior_canvas_size_hor_flex_1.set_type(FlexType::Row);
+		interior_canvas_size_hor_flex_1.set_frame(FrameType::FlatBox);
+		exterior_canvas_setting_flex.add(&interior_canvas_size_hor_flex_1);
+
+		let mut interior_canvas_size_hor_flex_2 = Flex::default()
+			.with_pos(interior_canvas_size_hor_flex_1.x(), interior_canvas_size_hor_flex_1.y() + interior_canvas_size_hor_flex_1.height())
+			.with_size(interior_canvas_size_hor_flex_1.width(), 50);
+		interior_canvas_size_hor_flex_2.end();
+		interior_canvas_size_hor_flex_2.set_type(FlexType::Row);
+		interior_canvas_size_hor_flex_2.set_frame(FrameType::FlatBox);
+		exterior_canvas_setting_flex.add(&interior_canvas_size_hor_flex_2);
 
 		// level number stuff
 		let level_label_frame = Frame::default()
-			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width() + get_default_tab_padding(), self.cave_canvas_scroll.y())
+			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width(), self.cave_canvas_scroll.y())
 			.with_label("Level")
 			.with_size(30, 20)
 			.with_align(Align::Center);
-		self.whole_tab_group.add(&level_label_frame);
+		interior_level_number_hor_flex_1.add(&level_label_frame);
 
 		self.level_cur_buf = TextBuffer::default();
 		self.level_cur_buf.set_text("1");
 		let mut level_cur_label_txt = TextDisplay::default()
-			.with_pos(level_label_frame.x() + level_label_frame.width() + get_default_tab_padding(), level_label_frame.y())
+			.with_pos(level_label_frame.x() + level_label_frame.width(), level_label_frame.y())
 			.with_size(20,20);
 		level_cur_label_txt.set_buffer(self.level_cur_buf.clone());
-		self.whole_tab_group.add(&level_cur_label_txt);
+		interior_level_number_hor_flex_1.add(&level_cur_label_txt);
 		
 		let level_out_of_label_frame = Frame::default()
 			.with_pos(level_cur_label_txt.x() + level_cur_label_txt.width(), level_cur_label_txt.y())
 			.with_size(25,20)
 			.with_label(" out of ");
-		self.whole_tab_group.add(&level_out_of_label_frame);
+		interior_level_number_hor_flex_1.add(&level_out_of_label_frame);
 		
 		self.level_tot_buf = TextBuffer::default();
 		self.level_tot_buf.set_text("3");
@@ -77,29 +154,29 @@ impl CaveGenGroup {
 			.with_pos(level_out_of_label_frame.x() + level_out_of_label_frame.width(), level_out_of_label_frame.y())
 			.with_size(20,20);
 		level_total_label_txt.set_buffer(self.level_tot_buf.clone());
-		self.whole_tab_group.add(&level_total_label_txt);
+		interior_level_number_hor_flex_1.add(&level_total_label_txt);
 		
 		let level_down_btn = Button::default()
-			.with_pos(level_label_frame.x(), level_label_frame.y() + level_label_frame.height() + get_default_tab_padding())
+			.with_pos(level_label_frame.x(), level_label_frame.y() + level_label_frame.height())
 			.with_size(25, 25)
 			.with_label("@line");
-		self.whole_tab_group.add(&level_down_btn);
+		interior_level_number_hor_flex_2.add(&level_down_btn);
 		let level_up_btn = Button::default()
-			.with_pos(level_down_btn.x() + level_down_btn.width() + get_default_tab_padding(), level_down_btn.y())
+			.with_pos(level_down_btn.x() + level_down_btn.width() , level_down_btn.y())
 			.with_size(25,25)
 			.with_label("@+");
-		self.whole_tab_group.add(&level_up_btn);
+		interior_level_number_hor_flex_2.add(&level_up_btn);
 
 		// stuff for setting size/resolution of squares
 		let square_size_label = Frame::default()
-			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width() + get_default_tab_padding(), level_down_btn.y() + level_down_btn.height() + get_default_tab_padding())
+			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width(), level_down_btn.y() + level_down_btn.height() + get_default_tab_padding())
 			.with_size(90, 25)
 			.with_label("Level Size (in squares)")
 			.with_align(Align::Inside);
-		self.whole_tab_group.add(&square_size_label);
+		interior_canvas_size_hor_flex_1.add(&square_size_label);
 
 		self.squares_width_counter = Counter::default()
-			.with_pos(square_size_label.x(), square_size_label.y() + square_size_label.height() + get_default_tab_padding())
+			.with_pos(square_size_label.x(), square_size_label.y() + square_size_label.height())
 			.with_size(50, 25)
 			.with_label("Width")
 			.with_align(Align::Top);
@@ -108,10 +185,10 @@ impl CaveGenGroup {
 		self.squares_width_counter.set_maximum(1000.0);
 		self.squares_width_counter.set_precision(0);
 		self.squares_width_counter.set_step(1.0, 10);
-		self.whole_tab_group.add(&self.squares_width_counter);
+		interior_canvas_size_hor_flex_2.add(&self.squares_width_counter);
 
 		self.squares_height_counter = Counter::default()
-			.with_pos(self.squares_width_counter.x() + self.squares_width_counter.width() + get_default_tab_padding(), self.squares_width_counter.y())
+			.with_pos(self.squares_width_counter.x() + self.squares_width_counter.width(), self.squares_width_counter.y())
 			.with_size(50, 25)
 			.with_label("Height")
 			.with_align(Align::Top);
@@ -120,13 +197,18 @@ impl CaveGenGroup {
 		self.squares_height_counter.set_maximum(1000.0);
 		self.squares_height_counter.set_precision(0);
 		self.squares_height_counter.set_step(1.0, 10);
-		self.whole_tab_group.add(&self.squares_height_counter);
+		interior_canvas_size_hor_flex_2.add(&self.squares_height_counter);
 
 		// pixel scale
-		self.squares_pixel_diameter_counter = Counter::default()
-			.with_pos(self.squares_width_counter.x(), self.squares_width_counter.y() + self.squares_height_counter.height() +  2 * get_default_tab_padding())
+		let squares_pixel_diameter_label = Frame::default()
+			.with_pos(self.squares_width_counter.x(), self.squares_width_counter.y() + self.squares_width_counter.height())
 			.with_size(50, 25)
-			.with_label("Scale (Pixel Diameter per Square)")
+			.with_label("Scale (Pixel Diameter per Square)");
+		exterior_canvas_setting_flex.add(&squares_pixel_diameter_label);
+
+		self.squares_pixel_diameter_counter = Counter::default()
+			.with_pos(squares_pixel_diameter_label.x(), squares_pixel_diameter_label.y() + squares_pixel_diameter_label.height())
+			.with_size(50, 25)
 			.with_align(Align::TopLeft);
 		self.squares_pixel_diameter_counter.set_value(2.0);
 		self.squares_pixel_diameter_counter.set_minimum(1.0);
@@ -134,14 +216,14 @@ impl CaveGenGroup {
 		self.squares_pixel_diameter_counter.set_precision(0);
 		self.squares_pixel_diameter_counter.set_step(1.0, 10);
 		self.squares_pixel_diameter_counter.set_type(CounterType::Simple);
-		self.whole_tab_group.add(&self.squares_pixel_diameter_counter);
+		exterior_canvas_setting_flex.add(&self.squares_pixel_diameter_counter);
 
 		// button for updating canvas
 		let mut update_canvas_button = Button::default()
-			.with_pos(self.squares_pixel_diameter_counter.x(), self.squares_pixel_diameter_counter.y() + self.squares_pixel_diameter_counter.height() + get_default_tab_padding())
+			.with_pos(self.squares_pixel_diameter_counter.x(), self.squares_pixel_diameter_counter.y() + self.squares_pixel_diameter_counter.height())
 			.with_size(100, 25)
 			.with_label("Update Canvas");
-		self.whole_tab_group.add(&update_canvas_button);
+		exterior_canvas_setting_flex.add(&update_canvas_button);
 		update_canvas_button.emit(msg_sender.clone(), "CaveGen:Canvas:Update".to_string());
 	}//end initialize()
 
@@ -156,4 +238,4 @@ impl CaveGenGroup {
 	}//end update_canvas(self)
 }//end impl for CaveGenGroup
 
-widget_extends!(CaveGenGroup, Group, whole_tab_group);
+widget_extends!(CaveGenGroup, Tile, whole_tab_group);
