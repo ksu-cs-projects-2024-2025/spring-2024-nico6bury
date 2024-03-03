@@ -1,11 +1,14 @@
-use fltk::{app::Sender, button::Button, enums::{Align, Color, FrameType}, frame::Frame, group::{Column, Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ValuatorExt, WidgetExt}, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
+use std::{cell::RefCell, rc::Rc};
 
-use crate::gui::gui_utils::{get_default_menu_height, get_default_tab_padding};
+use fltk::{app::{self, Sender}, button::Button, draw::{draw_line, draw_point, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
+
+use crate::gui::gui_utils::get_default_tab_padding;
 
 pub struct CaveGenGroup {
 	whole_tab_group: Tile,
 	cave_canvas_scroll: Scroll,
 	pub cave_canvas_frame: Frame,
+	pub cave_canvas_image: Rc<RefCell<ImageSurface>>,
 	pub level_cur_buf: TextBuffer,
 	pub level_tot_buf: TextBuffer,
 	pub squares_width_counter: Counter,
@@ -15,10 +18,12 @@ pub struct CaveGenGroup {
 
 impl Default for CaveGenGroup {
 	fn default() -> Self {
+		let default_image_sur = ImageSurface::new(10,10, false);
 		let cave_gen_group = CaveGenGroup {
 			whole_tab_group: Default::default(),
 			cave_canvas_scroll: Default::default(),
 			cave_canvas_frame: Default::default(),
+			cave_canvas_image: Rc::from(RefCell::from(default_image_sur)),
 			level_cur_buf: Default::default(),
 			level_tot_buf: Default::default(),
 			squares_width_counter: Default::default(),
@@ -32,6 +37,9 @@ impl Default for CaveGenGroup {
 }//end impl Default for CaveGenGroup
 
 impl CaveGenGroup {
+	/// # initialize(&mut self, msg_sender)
+	/// This function does all necessary initial setup.  
+	/// Call it once after declaring the CaveGenGroup object.
 	pub fn initialize(&mut self, msg_sender: &Sender<String>) {
 		// let resizable_frame = Frame::default()
 		// 	.with_pos(self.whole_tab_group.x(), self.whole_tab_group.y())
@@ -61,8 +69,10 @@ impl CaveGenGroup {
 			.with_size(100,100)
 			.with_label("Canvas thingy");
 		self.cave_canvas_frame.set_frame(FrameType::BorderBox);
-		self.cave_canvas_frame.set_color(Color::White);
 		self.cave_canvas_scroll.add(&self.cave_canvas_frame);
+
+		// image display part of canvas
+		self.update_image_size_and_drawing();
 
 		// exterior vertical flex for canvas setting stuff
 		let mut exterior_canvas_setting_flex = Flex::default()
@@ -222,11 +232,71 @@ impl CaveGenGroup {
 		let mut update_canvas_button = Button::default()
 			.with_pos(self.squares_pixel_diameter_counter.x(), self.squares_pixel_diameter_counter.y() + self.squares_pixel_diameter_counter.height())
 			.with_size(100, 25)
-			.with_label("Update Canvas");
+			.with_label("Clear Canvas and Update Size/Scale");
 		exterior_canvas_setting_flex.add(&update_canvas_button);
 		update_canvas_button.emit(msg_sender.clone(), "CaveGen:Canvas:Update".to_string());
 	}//end initialize()
 
+	/// # update_image_size_and_drawing(&mut self)
+	/// This function creates/updates the canvas surface for drawing cave stuff with the right size.  
+	fn update_image_size_and_drawing(&mut self) {
+		let canvas_surface = ImageSurface::new(self.cave_canvas_frame.width(), self.cave_canvas_frame.height(), false);
+		
+		ImageSurface::push_current(&canvas_surface);
+		// TODO: Redo filling to not reset previous work, probably by copying drawings out of old surface image
+		fltk::draw::draw_rect_fill(0,0,self.cave_canvas_frame.width(), self.cave_canvas_frame.height(), Color::White);
+		ImageSurface::pop_current();
+
+		self.cave_canvas_image = Rc::from(RefCell::from(canvas_surface));
+
+		self.cave_canvas_frame.draw( {
+			let surface = self.cave_canvas_image.clone();
+			move |f| {
+				let surface = surface.borrow();
+				let mut img = surface.image().unwrap();
+				img.draw(f.x(), f.y(), f.w(), f.h());
+			}
+		});
+
+		self.cave_canvas_frame.handle( {
+			let mut x = 0;
+			let mut y = 0;
+			let surface = self.cave_canvas_image.clone();
+			move |f, ev| {
+				let surface = surface.borrow_mut();
+				match ev {
+					Event::Push => {
+						ImageSurface::push_current(&surface);
+						set_draw_color(Color::Black);
+						set_line_style(LineStyle::Solid, 3);
+						let coords = app::event_coords();
+						x = coords.0; // fefwf
+						y = coords.1;
+						draw_point(x, y);
+						ImageSurface::pop_current();
+						f.redraw();
+						true
+					}//end push event
+					Event::Drag => {
+						ImageSurface::push_current(&surface);
+						set_draw_color(Color::Black);
+						set_line_style(LineStyle::Solid, 3);
+						let coords = app::event_coords();
+						draw_line(x - f.x(), y - f.y(), coords.0 - f.x(), coords.1 - f.y());
+						x = coords.0;
+						y = coords.1;
+						ImageSurface::pop_current();
+						f.redraw();
+						true
+					}
+					_ => false
+				}//end matching event
+			}//end handle move
+		});
+	}//end update_image_size_and_height(prev_w, prev_h)
+
+	/// # update_canvas(&mut self)
+	/// This function updates the size of the drawing canvas based on user settings. 
 	pub fn update_canvas(&mut self) {
 		let diameter_counter = self.squares_pixel_diameter_counter.value();
 		let squares_width = self.squares_width_counter.value();
@@ -234,6 +304,8 @@ impl CaveGenGroup {
 		let pixels_width = squares_width * diameter_counter;
 		let pixels_height = squares_height * diameter_counter;
 		self.cave_canvas_frame.set_size(pixels_width as i32, pixels_height as i32);
+		self.update_image_size_and_drawing();
+		self.cave_canvas_scroll.redraw();
 		self.cave_canvas_frame.redraw();
 	}//end update_canvas(self)
 }//end impl for CaveGenGroup
