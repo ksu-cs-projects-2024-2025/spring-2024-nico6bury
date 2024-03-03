@@ -151,7 +151,7 @@ impl GUI {
 			.with_label("Cave Generation");
 		self.cave_gen_tab.end();
 		self.tab_container.add(&*self.cave_gen_tab);
-		self.cave_gen_tab.initialize();
+		self.cave_gen_tab.initialize(&self.msg_sender);
 
 		// third tab settings
 		self.room_gen_tab = Group::default()
@@ -218,12 +218,7 @@ impl GUI {
 			},
 		}//end matching desired tab index
 
-		self.tab_container.redraw();
-		self.gen_setting_tab.redraw();
-		self.cave_gen_tab.redraw();
-		self.room_gen_tab.redraw();
-		self.multi_gen_tab.redraw();
-		self.output_img_tab.redraw();
+		self.redraw_tabs();
 	}//end switch_tab(&mut self, tab_idx)
 
 	/// # show(&mut self)
@@ -243,4 +238,17 @@ impl GUI {
 	pub fn wait(&self) -> bool {
 		self.app.wait()
 	}//end wait(&self)
+
+	pub fn redraw_tabs(&mut self) {
+		self.tab_container.redraw();
+		self.gen_setting_tab.redraw();
+		self.cave_gen_tab.redraw();
+		self.room_gen_tab.redraw();
+		self.multi_gen_tab.redraw();
+		self.output_img_tab.redraw();
+	}//end redraw_tabs(self)
+
+	pub fn update_cave_canvas(&mut self) {
+		self.cave_gen_tab.update_canvas();
+	}//end update_cave_canvas
 }//end impl for GUI

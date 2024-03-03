@@ -1,4 +1,4 @@
-use fltk::{button::Button, enums::{Align, FrameType}, frame::Frame, group::{Group, Scroll}, prelude::{DisplayExt, GroupExt, ValuatorExt, WidgetExt}, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
+use fltk::{app::Sender, button::Button, enums::{Align, FrameType}, frame::Frame, group::{Group, Scroll}, prelude::{DisplayExt, GroupExt, ValuatorExt, WidgetExt}, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
 use crate::gui::gui_utils::{get_default_menu_height, get_default_tab_padding};
 
@@ -32,7 +32,7 @@ impl Default for CaveGenGroup {
 }//end impl Default for CaveGenGroup
 
 impl CaveGenGroup {
-	pub fn initialize(&mut self) {
+	pub fn initialize(&mut self, msg_sender: &Sender<String>) {
 		// scrollable container for size-locked canvas
 		self.cave_canvas_scroll = Scroll::default()
 			.with_pos(get_default_tab_padding(), self.whole_tab_group.y() + get_default_menu_height())
@@ -135,7 +135,25 @@ impl CaveGenGroup {
 		self.squares_pixel_diameter_counter.set_step(1.0, 10);
 		self.squares_pixel_diameter_counter.set_type(CounterType::Simple);
 		self.whole_tab_group.add(&self.squares_pixel_diameter_counter);
+
+		// button for updating canvas
+		let mut update_canvas_button = Button::default()
+			.with_pos(self.squares_pixel_diameter_counter.x(), self.squares_pixel_diameter_counter.y() + self.squares_pixel_diameter_counter.height() + get_default_tab_padding())
+			.with_size(100, 25)
+			.with_label("Update Canvas");
+		self.whole_tab_group.add(&update_canvas_button);
+		update_canvas_button.emit(msg_sender.clone(), "CaveGen:Canvas:Update".to_string());
 	}//end initialize()
+
+	pub fn update_canvas(&mut self) {
+		let diameter_counter = self.squares_pixel_diameter_counter.value();
+		let squares_width = self.squares_width_counter.value();
+		let squares_height = self.squares_height_counter.value();
+		let pixels_width = squares_width * diameter_counter;
+		let pixels_height = squares_height * diameter_counter;
+		self.cave_canvas_frame.set_size(pixels_width as i32, pixels_height as i32);
+		self.cave_canvas_frame.redraw();
+	}//end update_canvas(self)
 }//end impl for CaveGenGroup
 
 widget_extends!(CaveGenGroup, Group, whole_tab_group);

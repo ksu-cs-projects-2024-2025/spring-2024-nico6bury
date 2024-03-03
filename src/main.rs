@@ -8,6 +8,7 @@ fn main() {
 
     // make gui visible and start program
     gui.show();
+    gui.switch_tab(1);
     while gui.wait() {
         if let Some(val) = gui.msg_receiver.recv() {
             // Todo: match message
@@ -17,6 +18,10 @@ fn main() {
                 },
                 "MenuChoice::Choice2" => {
                     gui.switch_tab(1);
+                },
+                "CaveGen:Canvas:Update" => {
+                    gui.update_cave_canvas();
+                    println!("Told cave canvas to update");
                 },
                 _ => {
                     println!("Value not recognized: {}", val);
