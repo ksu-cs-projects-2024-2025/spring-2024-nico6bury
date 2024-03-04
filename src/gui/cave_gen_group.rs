@@ -252,7 +252,7 @@ impl CaveGenGroup {
 		let canvas_surface = ImageSurface::new(self.cave_canvas_frame.width(), self.cave_canvas_frame.height(), false);
 		
 		ImageSurface::push_current(&canvas_surface);
-		// TODO: Redo filling to not reset previous work, probably by copying drawings out of old surface image
+		// TODO: Redo filling to not reset previous work, probably by copying drawings out of old surface image, maybe by using fltk::draw_image or fltk::draw_rbg and limiting size of image? If changing resolution, might need to grid-ify first
 		fltk::draw::draw_rect_fill(0,0,self.cave_canvas_frame.width(), self.cave_canvas_frame.height(), Color::White);
 		ImageSurface::pop_current();
 
