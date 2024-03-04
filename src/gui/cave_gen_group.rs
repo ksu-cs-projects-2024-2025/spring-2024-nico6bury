@@ -50,7 +50,7 @@ impl CaveGenGroup {
 		// exterior group for canvas and scroll to fix border issues
 		let mut cave_canvas_group = Group::default()
 			.with_pos(0, self.whole_tab_group.y())
-			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height() / 2);
+			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height() * 2 / 3);
 		cave_canvas_group.end();
 		cave_canvas_group.set_frame(FrameType::FlatBox);
 		self.whole_tab_group.add(&cave_canvas_group);
@@ -77,16 +77,25 @@ impl CaveGenGroup {
 		// exterior vertical flex for canvas setting stuff
 		let mut exterior_canvas_setting_flex = Flex::default()
 			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width(), self.cave_canvas_scroll.y())
-			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height());
+			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height() / 2);
 		exterior_canvas_setting_flex.end();
 		exterior_canvas_setting_flex.set_type(FlexType::Column);
 		exterior_canvas_setting_flex.set_frame(FrameType::BorderBox);
 		self.whole_tab_group.add(&exterior_canvas_setting_flex);
+		
+		// exterior vertical flex for CA controls
+		let mut exterior_cellular_automata_controls_flex = Flex::default()
+			.with_pos(exterior_canvas_setting_flex.x(), exterior_canvas_setting_flex.y() + exterior_canvas_setting_flex.height())
+			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height() / 2);
+		exterior_cellular_automata_controls_flex.end();
+		exterior_cellular_automata_controls_flex.set_type(FlexType::Column);
+		exterior_cellular_automata_controls_flex.set_frame(FrameType::BorderBox);
+		self.whole_tab_group.add(&exterior_cellular_automata_controls_flex);
 
 		// exterior vertical flex for canvas drawing stuff
 		let mut exterior_canvas_drawing_setting_flex = Flex::default()
 			.with_pos(self.cave_canvas_scroll.x(), self.cave_canvas_scroll.y() + self.cave_canvas_scroll.height())
-			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height() / 2);
+			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height() - cave_canvas_group.height());
 		exterior_canvas_drawing_setting_flex.end();
 		exterior_canvas_drawing_setting_flex.set_type(FlexType::Column);
 		exterior_canvas_drawing_setting_flex.set_frame(FrameType::BorderBox);
