@@ -71,9 +71,6 @@ impl CaveGenGroup {
 		self.cave_canvas_frame.set_frame(FrameType::BorderBox);
 		self.cave_canvas_scroll.add(&self.cave_canvas_frame);
 
-		// image display part of canvas
-		self.update_image_size_and_drawing();
-
 		// exterior vertical flex for canvas setting stuff
 		let mut exterior_canvas_setting_flex = Flex::default()
 			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width(), self.whole_tab_group.y())
@@ -85,6 +82,9 @@ impl CaveGenGroup {
 
 		// set up all controls within exterior_canvas_settings_flex
 		self.initialize_canvas_settings(&mut exterior_canvas_setting_flex, msg_sender);
+
+		// image display part of canvas
+		self.update_image_size_and_drawing();
 		
 		// exterior vertical flex for CA controls
 		let mut exterior_cellular_automata_controls_flex = Flex::default()
@@ -238,7 +238,7 @@ impl CaveGenGroup {
 			.with_pos(squares_pixel_diameter_label.x(), squares_pixel_diameter_label.y() + squares_pixel_diameter_label.height())
 			.with_size(50, 25)
 			.with_align(Align::TopLeft);
-		self.squares_pixel_diameter_counter.set_value(2.0);
+		self.squares_pixel_diameter_counter.set_value(8.0);
 		self.squares_pixel_diameter_counter.set_minimum(1.0);
 		self.squares_pixel_diameter_counter.set_maximum(30.0);
 		self.squares_pixel_diameter_counter.set_precision(0);
@@ -254,6 +254,11 @@ impl CaveGenGroup {
 		exterior_flex.add(&update_canvas_button);
 		// TODO: Rework this to activate entirely within this file and remove need for msg_sender for this functionallity
 		update_canvas_button.emit(msg_sender.clone(), "CaveGen:Canvas:Update".to_string());
+
+		// update cave canvas frame based on default values in Counters
+		let new_width = self.squares_width_counter.value() * self.squares_pixel_diameter_counter.value();
+		let new_height = self.squares_height_counter.value() * self.squares_pixel_diameter_counter.value();
+		self.cave_canvas_frame.set_size(new_width as i32, new_height as i32);
 	}//initialize_canvas_settings
 
 	/// # update_image_size_and_drawing(&mut self)
