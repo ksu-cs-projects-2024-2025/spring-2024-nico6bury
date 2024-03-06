@@ -7,13 +7,13 @@ use crate::gui::gui_utils::get_default_tab_padding;
 pub struct CaveGenGroup {
 	ux_whole_tab_group: Tile,
 	ux_cave_canvas_scroll: Scroll,
-	pub ux_cave_canvas_frame: Frame,
-	pub ux_cave_canvas_image: Rc<RefCell<ImageSurface>>,
-	pub ux_level_cur_buf: TextBuffer,
-	pub ux_level_tot_buf: TextBuffer,
-	pub ux_squares_width_counter: Counter,
-	pub ux_squares_height_counter: Counter,
-	pub ux_squares_pixel_diameter_counter: Counter,
+	ux_cave_canvas_frame: Frame,
+	ux_cave_canvas_image: Rc<RefCell<ImageSurface>>,
+	ux_level_cur_buf: TextBuffer,
+	ux_level_tot_buf: TextBuffer,
+	ux_squares_width_counter: Counter,
+	ux_squares_height_counter: Counter,
+	ux_squares_pixel_diameter_counter: Counter,
 }//end struct CaveGenGroup
 
 impl Default for CaveGenGroup {

@@ -12,7 +12,7 @@ pub struct GUI {
 	/// main window of application
 	ux_main_window: Window,
 	/// sends messages for events
-	pub msg_sender: Sender<String>,
+	msg_sender: Sender<String>,
 	/// receives messages for events
 	pub msg_receiver: Receiver<String>,
 	ux_top_menu: SysMenuBar,
