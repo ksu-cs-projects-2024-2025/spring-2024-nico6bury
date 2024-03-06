@@ -76,12 +76,15 @@ impl CaveGenGroup {
 
 		// exterior vertical flex for canvas setting stuff
 		let mut exterior_canvas_setting_flex = Flex::default()
-			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width(), self.cave_canvas_scroll.y())
+			.with_pos(self.cave_canvas_scroll.x() + self.cave_canvas_scroll.width(), self.whole_tab_group.y())
 			.with_size(self.whole_tab_group.width() / 3, self.whole_tab_group.height() / 2);
 		exterior_canvas_setting_flex.end();
 		exterior_canvas_setting_flex.set_type(FlexType::Column);
 		exterior_canvas_setting_flex.set_frame(FrameType::BorderBox);
 		self.whole_tab_group.add(&exterior_canvas_setting_flex);
+
+		// set up all controls within exterior_canvas_settings_flex
+		self.initialize_canvas_settings(&mut exterior_canvas_setting_flex, msg_sender);
 		
 		// exterior vertical flex for CA controls
 		let mut exterior_cellular_automata_controls_flex = Flex::default()
@@ -110,14 +113,20 @@ impl CaveGenGroup {
 		exterior_level_connections_flex.set_frame(FrameType::BorderBox);
 		self.whole_tab_group.add(&exterior_level_connections_flex);
 
+		
+	}//end initialize()
+
+	/// # initialize_canvas_settings(self, exterior_flex)
+	/// Helper method of initialize() to handle controls within the exterior canvas settings flex.
+	fn initialize_canvas_settings(&mut self, exterior_flex: &mut Flex, msg_sender: &Sender<String>) {
 		// interior level number horizontal flex 1
 		let mut interior_level_number_hor_flex_1 = Flex::default()
-			.with_pos(exterior_canvas_setting_flex.x(), exterior_canvas_setting_flex.y())
-			.with_size(exterior_canvas_setting_flex.width(), 50);
+			.with_pos(exterior_flex.x(), exterior_flex.y())
+			.with_size(exterior_flex.width(), 50);
 		interior_level_number_hor_flex_1.end();
 		interior_level_number_hor_flex_1.set_type(FlexType::Row);
 		interior_level_number_hor_flex_1.set_frame(FrameType::FlatBox);
-		exterior_canvas_setting_flex.add(&interior_level_number_hor_flex_1);
+		exterior_flex.add(&interior_level_number_hor_flex_1);
 
 		// interior level number horizontal flex 2
 		let mut interior_level_number_hor_flex_2 = Flex::default()
@@ -126,7 +135,7 @@ impl CaveGenGroup {
 		interior_level_number_hor_flex_2.end();
 		interior_level_number_hor_flex_2.set_type(FlexType::Row);
 		interior_level_number_hor_flex_2.set_frame(FrameType::FlatBox);
-		exterior_canvas_setting_flex.add(&interior_level_number_hor_flex_2);
+		exterior_flex.add(&interior_level_number_hor_flex_2);
 
 		// interior canvas size horizontal flex 1
 		let mut interior_canvas_size_hor_flex_1 = Flex::default()
@@ -135,7 +144,7 @@ impl CaveGenGroup {
 		interior_canvas_size_hor_flex_1.end();
 		interior_canvas_size_hor_flex_1.set_type(FlexType::Row);
 		interior_canvas_size_hor_flex_1.set_frame(FrameType::FlatBox);
-		exterior_canvas_setting_flex.add(&interior_canvas_size_hor_flex_1);
+		exterior_flex.add(&interior_canvas_size_hor_flex_1);
 
 		let mut interior_canvas_size_hor_flex_2 = Flex::default()
 			.with_pos(interior_canvas_size_hor_flex_1.x(), interior_canvas_size_hor_flex_1.y() + interior_canvas_size_hor_flex_1.height())
@@ -143,7 +152,7 @@ impl CaveGenGroup {
 		interior_canvas_size_hor_flex_2.end();
 		interior_canvas_size_hor_flex_2.set_type(FlexType::Row);
 		interior_canvas_size_hor_flex_2.set_frame(FrameType::FlatBox);
-		exterior_canvas_setting_flex.add(&interior_canvas_size_hor_flex_2);
+		exterior_flex.add(&interior_canvas_size_hor_flex_2);
 
 		// level number stuff
 		let level_label_frame = Frame::default()
@@ -223,7 +232,7 @@ impl CaveGenGroup {
 			.with_pos(self.squares_width_counter.x(), self.squares_width_counter.y() + self.squares_width_counter.height())
 			.with_size(50, 25)
 			.with_label("Scale (Pixel Diameter per Square)");
-		exterior_canvas_setting_flex.add(&squares_pixel_diameter_label);
+		exterior_flex.add(&squares_pixel_diameter_label);
 
 		self.squares_pixel_diameter_counter = Counter::default()
 			.with_pos(squares_pixel_diameter_label.x(), squares_pixel_diameter_label.y() + squares_pixel_diameter_label.height())
@@ -235,16 +244,17 @@ impl CaveGenGroup {
 		self.squares_pixel_diameter_counter.set_precision(0);
 		self.squares_pixel_diameter_counter.set_step(1.0, 10);
 		self.squares_pixel_diameter_counter.set_type(CounterType::Simple);
-		exterior_canvas_setting_flex.add(&self.squares_pixel_diameter_counter);
+		exterior_flex.add(&self.squares_pixel_diameter_counter);
 
 		// button for updating canvas
 		let mut update_canvas_button = Button::default()
 			.with_pos(self.squares_pixel_diameter_counter.x(), self.squares_pixel_diameter_counter.y() + self.squares_pixel_diameter_counter.height())
 			.with_size(100, 25)
 			.with_label("Clear Canvas and Update Size/Scale");
-		exterior_canvas_setting_flex.add(&update_canvas_button);
+		exterior_flex.add(&update_canvas_button);
+		// TODO: Rework this to activate entirely within this file and remove need for msg_sender for this functionallity
 		update_canvas_button.emit(msg_sender.clone(), "CaveGen:Canvas:Update".to_string());
-	}//end initialize()
+	}//initialize_canvas_settings
 
 	/// # update_image_size_and_drawing(&mut self)
 	/// This function creates/updates the canvas surface for drawing cave stuff with the right size.  
