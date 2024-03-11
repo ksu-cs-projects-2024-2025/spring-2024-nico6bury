@@ -1,14 +1,28 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{borrow::BorrowMut, cell::{Ref, RefCell}, rc::Rc};
 
 use fltk::{app::{self, Sender}, button::Button, draw::{draw_line, draw_point, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
 use crate::gui::gui_utils::get_default_tab_padding;
+
+/// # enum DrawState
+/// This enum represents the current drawing state for the canvas.
+enum DrawState {
+	/// indicates user is drawing wall
+	Wall,
+	/// indicates user is drawing floor (like erasure)
+	Floor,
+	/// indicates user is placing a stair/level connection
+	Stair,
+	/// indicates user is not allowed to draw anything
+	Disabled,
+}//end enum DrawState
 
 pub struct CaveGenGroup {
 	ux_whole_tab_group: Tile,
 	ux_cave_canvas_scroll: Scroll,
 	ux_cave_canvas_frame: Frame,
 	ux_cave_canvas_image: Rc<RefCell<ImageSurface>>,
+	ux_cave_canvas_draw_state: Rc<RefCell<DrawState>>,
 	ux_level_cur_buf: TextBuffer,
 	ux_level_tot_buf: TextBuffer,
 	ux_squares_width_counter: Counter,
@@ -24,6 +38,7 @@ impl Default for CaveGenGroup {
 			ux_cave_canvas_scroll: Default::default(),
 			ux_cave_canvas_frame: Default::default(),
 			ux_cave_canvas_image: Rc::from(RefCell::from(default_image_sur)),
+			ux_cave_canvas_draw_state: Rc::from(RefCell::from(DrawState::Disabled)),
 			ux_level_cur_buf: Default::default(),
 			ux_level_tot_buf: Default::default(),
 			ux_squares_width_counter: Default::default(),
@@ -80,12 +95,9 @@ impl CaveGenGroup {
 		ux_exterior_canvas_setting_flex.set_frame(FrameType::BorderBox);
 		self.ux_whole_tab_group.add(&ux_exterior_canvas_setting_flex);
 
-		// set up all controls within exterior_canvas_settings_flex
+		// set up all controls within ux_exterior_canvas_settings_flex
 		self.initialize_canvas_settings(&mut ux_exterior_canvas_setting_flex, msg_sender);
 
-		// image display part of canvas
-		self.update_image_size_and_drawing();
-		
 		// exterior vertical flex for CA controls
 		let mut ux_exterior_cellular_automata_controls_flex = Flex::default()
 			.with_pos(ux_exterior_canvas_setting_flex.x(), ux_exterior_canvas_setting_flex.y() + ux_exterior_canvas_setting_flex.height())
@@ -104,6 +116,9 @@ impl CaveGenGroup {
 		ux_exterior_canvas_drawing_setting_flex.set_frame(FrameType::BorderBox);
 		self.ux_whole_tab_group.add(&ux_exterior_canvas_drawing_setting_flex);
 
+		// set up all controls within ux_exterior_canvas_drawing_setting_flex
+		self.initialize_drawing_settings(&mut ux_exterior_canvas_drawing_setting_flex);
+
 		// exterior vertical flex for level connections stuff
 		let mut ux_exterior_level_connections_flex = Flex::default()
 			.with_pos(ux_exterior_canvas_setting_flex.x() + ux_exterior_canvas_setting_flex.width(), ux_exterior_canvas_setting_flex.y())
@@ -113,10 +128,11 @@ impl CaveGenGroup {
 		ux_exterior_level_connections_flex.set_frame(FrameType::BorderBox);
 		self.ux_whole_tab_group.add(&ux_exterior_level_connections_flex);
 
-		
+		// image display part of canvas
+		self.update_image_size_and_drawing();
 	}//end initialize()
 
-	/// # initialize_canvas_settings(self, exterior_flex)
+	/// # initialize_canvas_settings(self, ux_exterior_flex)
 	/// Helper method of initialize() to handle controls within the exterior canvas settings flex.
 	fn initialize_canvas_settings(&mut self, ux_exterior_flex: &mut Flex, msg_sender: &Sender<String>) {
 		// interior level number horizontal flex 1
@@ -260,6 +276,120 @@ impl CaveGenGroup {
 		let new_height = self.ux_squares_height_counter.value() * self.ux_squares_pixel_diameter_counter.value();
 		self.ux_cave_canvas_frame.set_size(new_width as i32, new_height as i32);
 	}//initialize_canvas_settings
+
+	/// # initialize_drawing_settings(self, ux_exterior_flex)
+	fn initialize_drawing_settings(&mut self, ux_exterior_flex: &mut Flex) {
+		// flex for holding active/inactive identifiers
+		let mut ux_interior_flex_1 = Flex::default()
+			.with_pos(ux_exterior_flex.x(), ux_exterior_flex.y())
+			.with_size(ux_exterior_flex.width(), ux_exterior_flex.height() / 4);
+		ux_interior_flex_1.end();
+		ux_interior_flex_1.set_type(FlexType::Row);
+		ux_interior_flex_1.set_frame(FrameType::FlatBox);
+		ux_exterior_flex.add(&ux_interior_flex_1);
+
+		// flex for holding drawing mode buttons
+		let mut ux_interior_flex_2 = Flex::default()
+			.with_pos(ux_interior_flex_1.x(), ux_interior_flex_1.y() + ux_interior_flex_1.height())
+			.with_size(ux_exterior_flex.width(), ux_exterior_flex.height() / 4);
+		ux_interior_flex_2.end();
+		ux_interior_flex_2.set_type(FlexType::Row);
+		ux_interior_flex_2.set_frame(FrameType::FlatBox);
+		ux_exterior_flex.add(&ux_interior_flex_2);
+
+		// set up frames to show whether each drawing mode is active
+		let mut ux_wall_activation_frame = Frame::default()
+			.with_pos(ux_interior_flex_1.x(), ux_interior_flex_1.y())
+			.with_size(ux_interior_flex_1.width() / 3, ux_interior_flex_1.height())
+			.with_label("Activated");
+		ux_wall_activation_frame.set_color(Color::Green);
+		ux_wall_activation_frame.set_frame(FrameType::FlatBox);
+		ux_interior_flex_1.add(&ux_wall_activation_frame);
+
+		let mut ux_floor_activation_frame = Frame::default()
+			.with_pos(ux_wall_activation_frame.x() + ux_wall_activation_frame.width(), ux_interior_flex_1.y())
+			.with_size(ux_interior_flex_1.width() / 3, ux_interior_flex_1.height())
+			.with_label("Disabled");
+		ux_floor_activation_frame.set_color(Color::Red);
+		ux_floor_activation_frame.set_frame(FrameType::FlatBox);
+		ux_interior_flex_1.add(&ux_floor_activation_frame);
+
+		let mut ux_stair_activation_frame = Frame::default()
+			.with_pos(ux_floor_activation_frame.x() + ux_floor_activation_frame.width(), ux_interior_flex_1.y())
+			.with_size(ux_interior_flex_1.width() / 3, ux_interior_flex_1.height())
+			.with_label("Disabled");
+		ux_stair_activation_frame.set_color(Color::Red);
+		ux_stair_activation_frame.set_frame(FrameType::FlatBox);
+		ux_interior_flex_1.add(&ux_stair_activation_frame);
+
+		// set up buttons to choose between different drawing modes
+		let mut ux_draw_wall_btn = Button::default()
+			.with_pos(ux_interior_flex_2.x(), ux_interior_flex_2.y())
+			.with_size(ux_interior_flex_2.width() / 3, ux_interior_flex_2.height())
+			.with_label("Draw Wall");
+		ux_draw_wall_btn.set_color(Color::Black);
+		ux_draw_wall_btn.set_label_color(Color::White);
+		ux_interior_flex_2.add(&ux_draw_wall_btn);
+		
+
+		let mut ux_draw_floor_btn = Button::default()
+			.with_pos(ux_draw_wall_btn.x() + ux_draw_wall_btn.width(), ux_interior_flex_2.y())
+			.with_size(ux_interior_flex_2.width() / 3, ux_interior_flex_2.height())
+			.with_label("Draw Floor");
+		ux_draw_floor_btn.set_color(Color::White);
+		ux_interior_flex_2.add(&ux_draw_floor_btn);
+
+		let mut ux_draw_stairs_btn = Button::default()
+			.with_pos(ux_draw_floor_btn.x() + ux_draw_floor_btn.width(), ux_interior_flex_2.y())
+			.with_size(ux_interior_flex_2.width() / 3, ux_interior_flex_2.height())
+			.with_label("Draw Stairs");
+		ux_draw_stairs_btn.set_color(Color::Green);
+		ux_interior_flex_2.add(&ux_draw_stairs_btn);
+
+		// set up controls for choosing 
+		let ux_brush_size_label = Frame::default()
+			.with_pos(ux_interior_flex_2.x(), ux_interior_flex_2.y() + ux_interior_flex_2.height())
+			.with_size(ux_exterior_flex.width(), ux_exterior_flex.height() / 4)
+			.with_label("Set Brush Width, based on Canvas scale")
+			.with_align(Align::Center);
+		ux_exterior_flex.add(&ux_brush_size_label);
+
+		let mut ux_brush_size_counter = Counter::default()
+			.with_pos(ux_brush_size_label.x(), ux_brush_size_label.y() + ux_brush_size_label.height())
+			.with_size(ux_exterior_flex.width(), ux_exterior_flex.height()  / 4);
+		ux_brush_size_counter.set_value(1.0);
+		ux_brush_size_counter.set_minimum(1.0);
+		ux_brush_size_counter.set_maximum(20.0);
+		ux_brush_size_counter.set_precision(0);
+		ux_brush_size_counter.set_step(1.0, 2);
+		ux_brush_size_counter.set_type(CounterType::Simple);
+		ux_exterior_flex.add(&ux_brush_size_counter);
+
+		// set handlers for all the buttons
+		// let wall_frame_ref = Rc::from(RefCell::from(ux_wall_activation_frame));
+		// let floor_frame_ref = Rc::from(RefCell::from(ux_floor_activation_frame));
+		// let stairs_frame_ref = Rc::from(RefCell::from(ux_stair_activation_frame));
+
+		// ux_draw_wall_btn.handle({
+		// 	let draw_state = self.ux_cave_canvas_draw_state.clone();
+		// 	let wall_frame_ref = wall_frame_ref.clone();
+		// 	let floor_frame_ref = floor_frame_ref.clone();
+		// 	let stairs_frame_ref = stairs_frame_ref.clone();
+		// 	move |b, ev| {
+		// 		let draw_state = draw_state.borrow_mut();
+		// 		let wall_frame_ref = wall_frame_ref.borrow_mut();
+		// 		let floor_frame_ref = floor_frame_ref.borrow_mut();
+		// 		let stairs_frame_ref = stairs_frame_ref.borrow_mut();
+		// 		match ev {
+		// 			Event::Push => {
+						
+		// 				true
+		// 			}
+		// 			_ => false
+		// 		}
+		// 	}
+		// });
+	}//end initialize_drawing_settings
 
 	/// # update_image_size_and_drawing(&mut self)
 	/// This function creates/updates the canvas surface for drawing cave stuff with the right size.  
