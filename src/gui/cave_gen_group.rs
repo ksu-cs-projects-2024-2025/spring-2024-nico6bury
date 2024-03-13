@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, cell::{Ref, RefCell}, rc::Rc};
+use std::{borrow::BorrowMut, cell::{Ref, RefCell, RefMut}, rc::Rc};
 
 use fltk::{app::{self, Sender}, button::Button, draw::{draw_line, draw_point, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
@@ -302,7 +302,7 @@ impl CaveGenGroup {
 			.with_pos(ux_interior_flex_1.x(), ux_interior_flex_1.y())
 			.with_size(ux_interior_flex_1.width() / 3, ux_interior_flex_1.height())
 			.with_label("Activated");
-		ux_wall_activation_frame.set_color(Color::Green);
+		ux_wall_activation_frame.set_color(Color::DarkGreen);
 		ux_wall_activation_frame.set_frame(FrameType::FlatBox);
 		ux_interior_flex_1.add(&ux_wall_activation_frame);
 
@@ -365,30 +365,91 @@ impl CaveGenGroup {
 		ux_brush_size_counter.set_type(CounterType::Simple);
 		ux_exterior_flex.add(&ux_brush_size_counter);
 
-		// set handlers for all the buttons
-		// let wall_frame_ref = Rc::from(RefCell::from(ux_wall_activation_frame));
-		// let floor_frame_ref = Rc::from(RefCell::from(ux_floor_activation_frame));
-		// let stairs_frame_ref = Rc::from(RefCell::from(ux_stair_activation_frame));
+		// update state of draw_state
+		self.ux_cave_canvas_draw_state = Rc::from(RefCell::from(DrawState::Wall));
 
-		// ux_draw_wall_btn.handle({
-		// 	let draw_state = self.ux_cave_canvas_draw_state.clone();
-		// 	let wall_frame_ref = wall_frame_ref.clone();
-		// 	let floor_frame_ref = floor_frame_ref.clone();
-		// 	let stairs_frame_ref = stairs_frame_ref.clone();
-		// 	move |b, ev| {
-		// 		let draw_state = draw_state.borrow_mut();
-		// 		let wall_frame_ref = wall_frame_ref.borrow_mut();
-		// 		let floor_frame_ref = floor_frame_ref.borrow_mut();
-		// 		let stairs_frame_ref = stairs_frame_ref.borrow_mut();
-		// 		match ev {
-		// 			Event::Push => {
-						
-		// 				true
-		// 			}
-		// 			_ => false
-		// 		}
-		// 	}
-		// });
+		// set handlers for all the buttons
+		let wall_frame_ref = Rc::from(RefCell::from(ux_wall_activation_frame));
+		let floor_frame_ref = Rc::from(RefCell::from(ux_floor_activation_frame));
+		let stairs_frame_ref = Rc::from(RefCell::from(ux_stair_activation_frame));
+
+		ux_draw_wall_btn.handle({
+			let mut draw_state = self.ux_cave_canvas_draw_state.clone();
+			let wall_frame_ref = wall_frame_ref.clone();
+			let floor_frame_ref = floor_frame_ref.clone();
+			let stairs_frame_ref = stairs_frame_ref.clone();
+			move |_b, ev| {
+				let draw_state = draw_state.borrow_mut();
+				let mut wall_frame_ref = wall_frame_ref.as_ref().borrow_mut();
+				let mut floor_frame_ref = floor_frame_ref.as_ref().borrow_mut();
+				let mut stairs_frame_ref = stairs_frame_ref.as_ref().borrow_mut();
+				match ev {
+					Event::Push => {
+						*draw_state = Rc::from(RefCell::from(DrawState::Wall));
+						wall_frame_ref.set_label("Activated");
+						wall_frame_ref.set_color(Color::DarkGreen);
+						floor_frame_ref.set_label("Disabled");
+						floor_frame_ref.set_color(Color::Red);
+						stairs_frame_ref.set_label("Disabled");
+						stairs_frame_ref.set_color(Color::Red);
+						true
+					}
+					_ => false
+				}
+			}
+		});
+
+		ux_draw_floor_btn.handle({
+			let mut draw_state = self.ux_cave_canvas_draw_state.clone();
+			let wall_frame_ref = wall_frame_ref.clone();
+			let floor_frame_ref = floor_frame_ref.clone();
+			let stairs_frame_ref = stairs_frame_ref.clone();
+			move |_b, ev| {
+				let draw_state = draw_state.borrow_mut();
+				let mut wall_frame_ref = wall_frame_ref.as_ref().borrow_mut();
+				let mut floor_frame_ref = floor_frame_ref.as_ref().borrow_mut();
+				let mut stairs_frame_ref = stairs_frame_ref.as_ref().borrow_mut();
+				match ev {
+					Event::Push => {
+						*draw_state = Rc::from(RefCell::from(DrawState::Floor));
+						wall_frame_ref.set_label("Disabled");
+						wall_frame_ref.set_color(Color::Red);
+						floor_frame_ref.set_label("Activated");
+						floor_frame_ref.set_color(Color::DarkGreen);
+						stairs_frame_ref.set_label("Disabled");
+						stairs_frame_ref.set_color(Color::Red);
+						true
+					}
+					_ => false
+				}
+			}
+		});
+
+		ux_draw_stairs_btn.handle({
+			let mut draw_state = self.ux_cave_canvas_draw_state.clone();
+			let wall_frame_ref = wall_frame_ref.clone();
+			let floor_frame_ref = floor_frame_ref.clone();
+			let stairs_frame_ref = stairs_frame_ref.clone();
+			move |_b, ev| {
+				let draw_state = draw_state.borrow_mut();
+				let mut wall_frame_ref = wall_frame_ref.as_ref().borrow_mut();
+				let mut floor_frame_ref = floor_frame_ref.as_ref().borrow_mut();
+				let mut stairs_frame_ref = stairs_frame_ref.as_ref().borrow_mut();
+				match ev {
+					Event::Push => {
+						*draw_state = Rc::from(RefCell::from(DrawState::Stair));
+						wall_frame_ref.set_label("Disabled");
+						wall_frame_ref.set_color(Color::Red);
+						floor_frame_ref.set_label("Disabled");
+						floor_frame_ref.set_color(Color::Red);
+						stairs_frame_ref.set_label("Activated");
+						stairs_frame_ref.set_color(Color::DarkGreen);
+						true
+					}
+					_ => false
+				}
+			}
+		});
 	}//end initialize_drawing_settings
 
 	/// # update_image_size_and_drawing(&mut self)
@@ -421,7 +482,7 @@ impl CaveGenGroup {
 			let surface = self.ux_cave_canvas_image.clone();
 			let pixel_scale_clone = pixel_scale_ref.clone();
 			move |f, ev| {
-				let surface = surface.borrow_mut();
+				let surface = surface.as_ref().borrow_mut();
 				let pixel_scale = pixel_scale_clone.borrow();
 				match ev {
 					Event::Push => {
