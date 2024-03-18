@@ -111,7 +111,7 @@ impl CaveGenGroup {
 		self.ux_whole_tab_group.add(&ux_exterior_cellular_automata_controls_flex);
 
 		// set up all controls within ux_exterior_cellular_automata_controls_flex
-		self.initialize_cellular_automata_settings(&mut ux_exterior_cellular_automata_controls_flex);
+		self.initialize_cellular_automata_settings(&mut ux_exterior_cellular_automata_controls_flex, msg_sender);
 
 		// exterior vertical flex for canvas drawing stuff
 		let mut ux_exterior_canvas_drawing_setting_flex = Flex::default()
@@ -482,7 +482,7 @@ impl CaveGenGroup {
 	/// # initiliaze_cellular_automata_settings(self, ux_exterior_flex)
 	/// 
 	/// This function, as a helper function for initialize(), sets up widgets for CA settings flex.
-	fn initialize_cellular_automata_settings(&mut self, ux_exterior_flex: &mut Flex) {
+	fn initialize_cellular_automata_settings(&mut self, ux_exterior_flex: &mut Flex, msg_sender: &Sender<String>) {
 		let ux_settings_label = Frame::default()
 		.with_label("Cellular Automata Controls\n(Requires Squareularity)");
 			// .with_size(ux_exterior_flex.width(), 50)
@@ -553,6 +553,10 @@ impl CaveGenGroup {
 				}
 			}
 		});
+
+		// button for actually starting generation
+		let mut ux_run_ca_btn = Button::default().with_label("Run Generation");
+		ux_run_ca_btn.emit(msg_sender.clone(), "CaveGen:CA:RunGeneration".to_string());
 	}//end initialize_cellular_automata_settings()
 
 	/// # update_image_size_and_drawing(&mut self)
