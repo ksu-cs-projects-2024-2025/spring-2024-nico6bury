@@ -467,9 +467,11 @@ impl CaveGenGroup {
 
 		let pixel_scale = self.ux_squares_pixel_diameter_counter.value() as i32;
 		let pixel_scale_ref = Rc::from(RefCell::from(pixel_scale));
+		let draw_state = &self.ux_cave_canvas_draw_state;
+		let surface_ref = &self.ux_cave_canvas_image;
 
 		self.ux_cave_canvas_frame.draw( {
-			let surface = self.ux_cave_canvas_image.clone();
+			let surface = surface_ref.clone();
 			move |f| {
 				let surface = surface.borrow();
 				let mut img = surface.image().unwrap();
@@ -480,15 +482,23 @@ impl CaveGenGroup {
 		self.ux_cave_canvas_frame.handle( {
 			let mut x = 0;
 			let mut y = 0;
-			let surface = self.ux_cave_canvas_image.clone();
+			let surface = surface_ref.clone();
 			let pixel_scale_clone = pixel_scale_ref.clone();
+			let draw_state = draw_state.clone();
 			move |f, ev| {
 				let surface = surface.as_ref().borrow_mut();
 				let pixel_scale = pixel_scale_clone.borrow();
+				let draw_state_ref = draw_state.as_ref().borrow();
+				let draw_color = match *draw_state_ref {
+					DrawState::Wall => Color::Black,
+					DrawState::Floor => Color::White,
+					DrawState::Stair => Color::Green,
+					DrawState::Disabled => Color::White,
+				};
 				match ev {
 					Event::Push => {
 						ImageSurface::push_current(&surface);
-						set_draw_color(Color::Black);
+						set_draw_color(draw_color);
 						set_line_style(LineStyle::Solid, *pixel_scale);
 						let coords = app::event_coords();
 						x = coords.0; // fefwf
@@ -500,7 +510,7 @@ impl CaveGenGroup {
 					}//end push event
 					Event::Drag => {
 						ImageSurface::push_current(&surface);
-						set_draw_color(Color::Black);
+						set_draw_color(draw_color);
 						set_line_style(LineStyle::Solid, *pixel_scale);
 						let coords = app::event_coords();
 						draw_line(x - f.x(), y - f.y(), coords.0 - f.x(), coords.1 - f.y());
@@ -514,6 +524,9 @@ impl CaveGenGroup {
 				}//end matching event
 			}//end handle move
 		});
+
+		self.ux_cave_canvas_scroll.redraw();
+		self.ux_cave_canvas_frame.redraw();
 	}//end update_image_size_and_height(prev_w, prev_h)
 
 	/// # update_canvas(&mut self)
@@ -526,8 +539,6 @@ impl CaveGenGroup {
 		let pixels_height = squares_height * diameter_counter;
 		self.ux_cave_canvas_frame.set_size(pixels_width as i32, pixels_height as i32);
 		self.update_image_size_and_drawing();
-		self.ux_cave_canvas_scroll.redraw();
-		self.ux_cave_canvas_frame.redraw();
 	}//end update_canvas(self)
 }//end impl for CaveGenGroup
 
