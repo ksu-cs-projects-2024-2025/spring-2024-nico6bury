@@ -6,6 +6,7 @@ use crate::gui::gui_utils::get_default_tab_padding;
 
 /// # enum DrawState
 /// This enum represents the current drawing state for the canvas.
+#[derive(Debug, PartialEq, Eq, Copy, Clone, Ord, PartialOrd, Hash)]
 enum DrawState {
 	/// indicates user is drawing wall
 	Wall,
@@ -374,18 +375,18 @@ impl CaveGenGroup {
 		let stairs_frame_ref = Rc::from(RefCell::from(ux_stair_activation_frame));
 
 		ux_draw_wall_btn.handle({
-			let mut draw_state = self.ux_cave_canvas_draw_state.clone();
+			let draw_state = self.ux_cave_canvas_draw_state.clone();
 			let wall_frame_ref = wall_frame_ref.clone();
 			let floor_frame_ref = floor_frame_ref.clone();
 			let stairs_frame_ref = stairs_frame_ref.clone();
 			move |_b, ev| {
-				let draw_state = draw_state.borrow_mut();
+				let mut draw_state = draw_state.as_ref().borrow_mut();
 				let mut wall_frame_ref = wall_frame_ref.as_ref().borrow_mut();
 				let mut floor_frame_ref = floor_frame_ref.as_ref().borrow_mut();
 				let mut stairs_frame_ref = stairs_frame_ref.as_ref().borrow_mut();
 				match ev {
 					Event::Push => {
-						*draw_state = Rc::from(RefCell::from(DrawState::Wall));
+						*draw_state = DrawState::Wall;
 						wall_frame_ref.set_label("Activated");
 						wall_frame_ref.set_color(Color::DarkGreen);
 						floor_frame_ref.set_label("Disabled");
@@ -400,18 +401,18 @@ impl CaveGenGroup {
 		});
 
 		ux_draw_floor_btn.handle({
-			let mut draw_state = self.ux_cave_canvas_draw_state.clone();
+			let draw_state = self.ux_cave_canvas_draw_state.clone();
 			let wall_frame_ref = wall_frame_ref.clone();
 			let floor_frame_ref = floor_frame_ref.clone();
 			let stairs_frame_ref = stairs_frame_ref.clone();
 			move |_b, ev| {
-				let draw_state = draw_state.borrow_mut();
+				let mut draw_state = draw_state.as_ref().borrow_mut();
 				let mut wall_frame_ref = wall_frame_ref.as_ref().borrow_mut();
 				let mut floor_frame_ref = floor_frame_ref.as_ref().borrow_mut();
 				let mut stairs_frame_ref = stairs_frame_ref.as_ref().borrow_mut();
 				match ev {
 					Event::Push => {
-						*draw_state = Rc::from(RefCell::from(DrawState::Floor));
+						*draw_state = DrawState::Floor;
 						wall_frame_ref.set_label("Disabled");
 						wall_frame_ref.set_color(Color::Red);
 						floor_frame_ref.set_label("Activated");
@@ -426,18 +427,18 @@ impl CaveGenGroup {
 		});
 
 		ux_draw_stairs_btn.handle({
-			let mut draw_state = self.ux_cave_canvas_draw_state.clone();
+			let draw_state = self.ux_cave_canvas_draw_state.clone();
 			let wall_frame_ref = wall_frame_ref.clone();
 			let floor_frame_ref = floor_frame_ref.clone();
 			let stairs_frame_ref = stairs_frame_ref.clone();
 			move |_b, ev| {
-				let draw_state = draw_state.borrow_mut();
+				let mut draw_state = draw_state.as_ref().borrow_mut();
 				let mut wall_frame_ref = wall_frame_ref.as_ref().borrow_mut();
 				let mut floor_frame_ref = floor_frame_ref.as_ref().borrow_mut();
 				let mut stairs_frame_ref = stairs_frame_ref.as_ref().borrow_mut();
 				match ev {
 					Event::Push => {
-						*draw_state = Rc::from(RefCell::from(DrawState::Stair));
+						*draw_state = DrawState::Stair;
 						wall_frame_ref.set_label("Disabled");
 						wall_frame_ref.set_color(Color::Red);
 						floor_frame_ref.set_label("Disabled");
