@@ -228,8 +228,19 @@ impl GUI {
 	/// has been constructed.
 	pub fn show(&mut self){
 		self.ux_main_window.show();
-		self.ux_main_window.maximize();
+		// resize window slightly to force it to recalculate 
+		self.force_resize_calc();
+		// self.ux_main_window.maximize();
 	}//end show(&mut self)
+
+	/// # force_resize_calc(&mut self)
+	/// 
+	/// Does a couple resize calls on main window that cause widget sizes to be recalculated.  
+	/// Size and location of main window should remain the same before and after function call.
+	pub fn force_resize_calc(&mut self) {
+		self.ux_main_window.resize(self.ux_main_window.x(), self.ux_main_window.y(), self.ux_main_window.width(), self.ux_main_window.height() + 1);
+		self.ux_main_window.resize(self.ux_main_window.x(), self.ux_main_window.y(), self.ux_main_window.width(), self.ux_main_window.height());
+	}//end force_resize_calc(&mut self)
 
 	/// # wait(&self)
 	/// 
