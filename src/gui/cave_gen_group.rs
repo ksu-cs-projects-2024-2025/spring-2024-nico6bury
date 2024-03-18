@@ -110,6 +110,9 @@ impl CaveGenGroup {
 		ux_exterior_cellular_automata_controls_flex.set_frame(FrameType::BorderBox);
 		self.ux_whole_tab_group.add(&ux_exterior_cellular_automata_controls_flex);
 
+		// set up all controls within ux_exterior_cellular_automata_controls_flex
+		self.initialize_cellular_automata_settings(&mut ux_exterior_cellular_automata_controls_flex);
+
 		// exterior vertical flex for canvas drawing stuff
 		let mut ux_exterior_canvas_drawing_setting_flex = Flex::default()
 			.with_pos(self.ux_cave_canvas_scroll.x(), self.ux_cave_canvas_scroll.y() + self.ux_cave_canvas_scroll.height())
@@ -136,7 +139,7 @@ impl CaveGenGroup {
 	}//end initialize()
 
 	/// # initialize_canvas_settings(self, ux_exterior_flex)
-	/// Helper method of initialize() to handle controls within the exterior canvas settings flex.
+	/// Helper method of initialize() to setup widgets within the exterior canvas settings flex.
 	fn initialize_canvas_settings(&mut self, ux_exterior_flex: &mut Flex, msg_sender: &Sender<String>) {
 		// interior level number horizontal flex 1
 		let mut ux_interior_level_number_hor_flex_1 = Flex::default()
@@ -281,6 +284,8 @@ impl CaveGenGroup {
 	}//initialize_canvas_settings
 
 	/// # initialize_drawing_settings(self, ux_exterior_flex)
+	/// 
+	/// This function, as a helper function for initialize(), sets up widgets for drawing settings flex.
 	fn initialize_drawing_settings(&mut self, ux_exterior_flex: &mut Flex) {
 		// flex for holding active/inactive identifiers
 		let mut ux_interior_flex_1 = Flex::default()
@@ -473,6 +478,82 @@ impl CaveGenGroup {
 			}
 		});
 	}//end initialize_drawing_settings
+
+	/// # initiliaze_cellular_automata_settings(self, ux_exterior_flex)
+	/// 
+	/// This function, as a helper function for initialize(), sets up widgets for CA settings flex.
+	fn initialize_cellular_automata_settings(&mut self, ux_exterior_flex: &mut Flex) {
+		let ux_settings_label = Frame::default()
+		.with_label("Cellular Automata Controls\n(Requires Squareularity)");
+			// .with_size(ux_exterior_flex.width(), 50)
+			// .with_pos(ux_exterior_flex.x(), ux_exterior_flex.y())
+		ux_exterior_flex.add(&ux_settings_label);
+
+		// add the spacer flexes
+		let mut ux_interior_flex_1 = Flex::default().with_type(FlexType::Row);
+		ux_interior_flex_1.end();
+		ux_exterior_flex.add(&ux_interior_flex_1);
+		let mut ux_interior_flex_2 = Flex::default().with_type(FlexType::Row);
+		ux_interior_flex_2.end();
+		ux_exterior_flex.add(&ux_interior_flex_2);
+		let mut ux_interior_flex_3 = Flex::default().with_type(FlexType::Row);
+		ux_interior_flex_3.end();
+		ux_exterior_flex.add(&ux_interior_flex_3);
+
+		// add the counter controls
+		let ux_neighbor_closeness_label = Frame::default().with_label("CA Neighbor Closeness");
+		ux_interior_flex_1.add(&ux_neighbor_closeness_label);
+
+		let mut ux_neighbor_closeness_counter = Counter::default();
+		ux_neighbor_closeness_counter.set_value(1.0);
+		ux_neighbor_closeness_counter.set_bounds(1.0, 10.0);
+		ux_neighbor_closeness_counter.set_precision(0);
+		ux_neighbor_closeness_counter.set_step(1.0, 1);
+		ux_neighbor_closeness_counter.set_type(CounterType::Simple);
+		ux_interior_flex_1.add(&ux_neighbor_closeness_counter);
+
+		let ux_neighbor_threshold_label = Frame::default().with_label("CA Neighbor Threshold");
+		ux_interior_flex_2.add(&ux_neighbor_threshold_label);
+
+		let mut ux_neighbor_threshold_counter = Counter::default();
+		ux_neighbor_threshold_counter.set_value(5.0);
+		ux_neighbor_threshold_counter.set_bounds(1.0, 100.0);
+		ux_neighbor_threshold_counter.set_precision(0);
+		ux_neighbor_threshold_counter.set_step(1.0, 1);
+		ux_neighbor_threshold_counter.set_type(CounterType::Simple);
+		ux_interior_flex_2.add(&ux_neighbor_threshold_counter);
+
+		let ux_iterations_label = Frame::default().with_label("Iterations to Run");
+		ux_interior_flex_3.add(&ux_iterations_label);
+
+		let mut ux_iterations_counter = Counter::default();
+		ux_iterations_counter.set_value(1.0);
+		ux_iterations_counter.set_bounds(1.0, 100.0);
+		ux_iterations_counter.set_precision(0);
+		ux_iterations_counter.set_step(1.0, 5);
+		ux_iterations_counter.set_type(CounterType::Normal);
+		ux_interior_flex_3.add(&ux_iterations_counter);
+
+		// add handler to counters to ensure bounds are updated
+		let ux_neighbor_threshold_ref = Rc::from(RefCell::from(ux_neighbor_threshold_counter));
+		ux_neighbor_closeness_counter.handle({
+			let ux_neighbor_threshold_ref = ux_neighbor_threshold_ref.clone();
+			move |c, ev| {
+				match ev {
+					Event::Push => {
+						let new_closeness_val = c.value() as i32;
+						// formula is (2c+1)^2 - 1
+						let closeness_max_neighbors = ((new_closeness_val*2)+1)*((new_closeness_val*2)+1)-1;
+						let mut ux_neighbor_threshold = ux_neighbor_threshold_ref.as_ref().borrow_mut();
+						ux_neighbor_threshold.set_maximum(closeness_max_neighbors as f64);
+						if ux_neighbor_threshold.value() as i32 > closeness_max_neighbors {ux_neighbor_threshold.set_value(closeness_max_neighbors as f64);}
+						true
+					},
+					_ => false
+				}
+			}
+		});
+	}//end initialize_cellular_automata_settings()
 
 	/// # update_image_size_and_drawing(&mut self)
 	/// This function creates/updates the canvas surface for drawing cave stuff with the right size.  
