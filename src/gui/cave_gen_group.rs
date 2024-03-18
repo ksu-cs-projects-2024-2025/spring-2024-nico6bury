@@ -1,4 +1,4 @@
-use std::{borrow::BorrowMut, cell::{Ref, RefCell, RefMut}, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use fltk::{app::{self, Sender}, button::Button, draw::{draw_line, draw_point, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
@@ -24,6 +24,7 @@ pub struct CaveGenGroup {
 	ux_cave_canvas_frame: Frame,
 	ux_cave_canvas_image: Rc<RefCell<ImageSurface>>,
 	ux_cave_canvas_draw_state: Rc<RefCell<DrawState>>,
+	ux_cave_canvas_brush_size: Rc<RefCell<i32>>,
 	ux_level_cur_buf: TextBuffer,
 	ux_level_tot_buf: TextBuffer,
 	ux_squares_width_counter: Counter,
@@ -40,6 +41,7 @@ impl Default for CaveGenGroup {
 			ux_cave_canvas_frame: Default::default(),
 			ux_cave_canvas_image: Rc::from(RefCell::from(default_image_sur)),
 			ux_cave_canvas_draw_state: Rc::from(RefCell::from(DrawState::Disabled)),
+			ux_cave_canvas_brush_size: Rc::from(RefCell::from(1)),
 			ux_level_cur_buf: Default::default(),
 			ux_level_tot_buf: Default::default(),
 			ux_squares_width_counter: Default::default(),
@@ -366,6 +368,25 @@ impl CaveGenGroup {
 		ux_brush_size_counter.set_type(CounterType::Simple);
 		ux_exterior_flex.add(&ux_brush_size_counter);
 
+		// set handler for the brush size counter, in order to update self.ux_cave_canvas_brush_size
+		ux_brush_size_counter.handle({
+			let brush_size_ref = self.ux_cave_canvas_brush_size.clone();
+			move |c, ev| {
+				let mut brush_size = brush_size_ref.as_ref().borrow_mut();
+				match ev {
+					// Updating brush size everytime the counter is clicked, whether brush size changed or not, is quite jank.
+					// However, if there's a better event to use, then that is not clear from the FLTK docs. 
+					// Event::Activate does not seem to be invoked when the counter is used, so that's out.
+					// This implementation does assume that the counter cannot have its value changed through key presses. 
+					Event::Push => {
+						*brush_size = c.value() as i32;
+						true
+					}
+					_ => false
+				}
+			}
+		});
+
 		// update state of draw_state
 		self.ux_cave_canvas_draw_state = Rc::from(RefCell::from(DrawState::Wall));
 
@@ -467,6 +488,7 @@ impl CaveGenGroup {
 
 		let pixel_scale = self.ux_squares_pixel_diameter_counter.value() as i32;
 		let pixel_scale_ref = Rc::from(RefCell::from(pixel_scale));
+		let brush_size_ref = &self.ux_cave_canvas_brush_size;
 		let draw_state = &self.ux_cave_canvas_draw_state;
 		let surface_ref = &self.ux_cave_canvas_image;
 
@@ -484,22 +506,31 @@ impl CaveGenGroup {
 			let mut y = 0;
 			let surface = surface_ref.clone();
 			let pixel_scale_clone = pixel_scale_ref.clone();
+			let brush_size_clone = brush_size_ref.clone();
 			let draw_state = draw_state.clone();
 			move |f, ev| {
 				let surface = surface.as_ref().borrow_mut();
-				let pixel_scale = pixel_scale_clone.borrow();
+				let pixel_scale = pixel_scale_clone.as_ref().borrow();
+				let brush_size = brush_size_clone.as_ref().borrow();
 				let draw_state_ref = draw_state.as_ref().borrow();
+				// update draw color and size based on draw state
 				let draw_color = match *draw_state_ref {
 					DrawState::Wall => Color::Black,
 					DrawState::Floor => Color::White,
 					DrawState::Stair => Color::Green,
 					DrawState::Disabled => Color::White,
 				};
+				let draw_size = match *draw_state_ref {
+					DrawState::Wall => *pixel_scale * *brush_size,
+					DrawState::Floor => *pixel_scale * *brush_size,
+					DrawState::Stair => *pixel_scale,
+					DrawState::Disabled => 0,
+				};
 				match ev {
 					Event::Push => {
 						ImageSurface::push_current(&surface);
 						set_draw_color(draw_color);
-						set_line_style(LineStyle::Solid, *pixel_scale);
+						set_line_style(LineStyle::Solid, draw_size);
 						let coords = app::event_coords();
 						x = coords.0; // fefwf
 						y = coords.1;
@@ -511,7 +542,7 @@ impl CaveGenGroup {
 					Event::Drag => {
 						ImageSurface::push_current(&surface);
 						set_draw_color(draw_color);
-						set_line_style(LineStyle::Solid, *pixel_scale);
+						set_line_style(LineStyle::Solid, draw_size);
 						let coords = app::event_coords();
 						draw_line(x - f.x(), y - f.y(), coords.0 - f.x(), coords.1 - f.y());
 						x = coords.0;
