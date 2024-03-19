@@ -1,4 +1,4 @@
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::{cell::RefCell, rc::Rc};
 
 use fltk::{app::{self, Sender}, button::Button, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
@@ -575,6 +575,7 @@ impl CaveGenGroup {
 
 		let pixel_scale = self.ux_squares_pixel_diameter_counter.value() as i32;
 		let pixel_scale_ref = Rc::from(RefCell::from(pixel_scale));
+		let sub_pixel_scale = Rc::from(RefCell::from(self.ux_sub_pixel_scale));
 		let brush_size_ref = &self.ux_cave_canvas_brush_size;
 		let draw_state = &self.ux_cave_canvas_draw_state;
 		let surface_ref = &self.ux_cave_canvas_image;
@@ -593,11 +594,13 @@ impl CaveGenGroup {
 			let mut y = 0;
 			let surface = surface_ref.clone();
 			let pixel_scale_clone = pixel_scale_ref.clone();
+			let sub_pixel_scale_clone = sub_pixel_scale.clone();
 			let brush_size_clone = brush_size_ref.clone();
 			let draw_state = draw_state.clone();
 			move |f, ev| {
 				let surface = surface.as_ref().borrow_mut();
 				let pixel_scale = pixel_scale_clone.as_ref().borrow();
+				let sub_pixel_scale_ref = sub_pixel_scale_clone.as_ref().borrow();
 				let brush_size = brush_size_clone.as_ref().borrow();
 				let draw_state_ref = draw_state.as_ref().borrow();
 				// update draw color and size based on draw state
@@ -637,6 +640,10 @@ impl CaveGenGroup {
 						ImageSurface::pop_current();
 						f.redraw();
 						true
+					},
+					Event::Released => {
+						CaveGenGroup::ux_squareularize_canvas(&surface, f, &pixel_scale, &sub_pixel_scale_ref);
+						true
 					}
 					_ => false
 				}//end matching event
@@ -654,7 +661,7 @@ impl CaveGenGroup {
 	/// - canvas - the image surface you want to squareularize  
 	/// - pixel_scale - how many pixels are in one grid square
 	/// - sub_pixel_scale - scale of sub-grid within each grid square
-	fn ux_squareularize_canvas(canvas: &mut ImageSurface, pixel_scale: &i32, sub_pixel_scale: &i32) -> bool {
+	fn ux_squareularize_canvas(canvas: &ImageSurface, canvas_frame: &mut Frame, pixel_scale: &i32, sub_pixel_scale: &i32) -> bool {
 		if let Some(cur_img) = canvas.image() {
 			match cur_img.depth() {
 				fltk::enums::ColorDepth::Rgb8 => {
@@ -671,6 +678,7 @@ impl CaveGenGroup {
 							let g = rgb_trio[1];
 							let b = rgb_trio[2];
 							rgb_pixel_vec.push((r,g,b));
+							rgb_trio.clear();
 						}//end if we're ready to push
 					}//end packing raw pixel data into rgb data
 
@@ -679,10 +687,14 @@ impl CaveGenGroup {
 					let square_width = cur_img.width() / square_scale;
 					let square_height = cur_img.height() / square_scale;
 					// format of (x, y, Color), assume square_width and square_height, fill in color later
-					let mut squares: Vec<(i32, i32, Color)> = Vec::new();
-					for x in (0..cur_img.width()).step_by(square_width as usize) {
-						for y in (0..cur_img.height()).step_by(square_height as usize) {
-							squares.push((x,y,Color::Cyan));
+					let mut squares: Vec<(i32, i32, (u8,u8,u8))> = Vec::new();
+					for mut x in (0..cur_img.width()).step_by(square_width as usize) {
+						// Squares at edges might overlap, but they won't be out of bounds
+						if x + square_width > cur_img.width() {x = cur_img.width() - square_width;}
+						for mut y in (0..cur_img.height()).step_by(square_height as usize) {
+							// Squares at edges might overlap, but they won't be out of bounds
+							if y + square_height > cur_img.height() {y = cur_img.height() - square_height;}
+							squares.push((x,y,Color::Cyan.to_rgb()));
 						}//end looping over all potential y values for sub-squares
 					}//end looping over all potential x values for sub-squares
 
@@ -690,24 +702,24 @@ impl CaveGenGroup {
 					for square in &mut squares {
 						// figure out dominant color here, set square.2 to that
 						// color_counts1 and color_counts2 are parallel
-						let mut color_counts1: Vec<Color> = Vec::new();
+						let mut color_counts1: Vec<(u8,u8,u8)> = Vec::new();
 						let mut color_counts2: Vec<u64> = Vec::new();
-						for x in square.0..square_width {
-							for y in square.1..square_height {
+						for y in square.1..(square_height + square.1) {
+							for x in square.0..(square_width + square.0) {
 								let this_overall_index = (y * cur_img.width()) + x;
 								let this_rgb = rgb_pixel_vec[this_overall_index as usize];
-								let this_color = Color::from_rgb(this_rgb.0, this_rgb.1, this_rgb.2);
+								let this_color = (this_rgb.0, this_rgb.1, this_rgb.2);
 								if let Some(color_index) = color_counts1.iter().position(|&c| c == this_color) {
 									color_counts2[color_index] += 1;
 								} else {
 									color_counts1.push(this_color);
 									color_counts2.push(1);
 								}//end else we need to add new entry to color counts
-							}//end looping over all y values within square
-						}//end looping over all x values within square
+							}//end looping over all x values within square
+						}//end looping over all y values within square
 						
 						// check to see which color has the highest count
-						let mut running_most = (Color::White, 0);
+						let mut running_most = ((40,40,40), 0);
 						for (i, count) in color_counts2.iter().enumerate() {
 							if *count > running_most.1 { running_most = (color_counts1[i], color_counts2[i]); }
 						}//end getting the color that's most common from color counts
@@ -716,22 +728,21 @@ impl CaveGenGroup {
 
 					// paint dominant color to entire square using the canvas
 					ImageSurface::push_current(&canvas);
+					draw_rect_fill(0, 0, cur_img.width(), cur_img.height(), Color::Magenta);
 					for square in &mut squares {
-						for x in square.0..square_width {
-							for y in square.1..square_height {
-								draw_rect_fill(x, y, square_width, square_height, square.2);
-							}//end looping over all y values within square
-						}//end looping over all x values within square
+						let a = (square.0, square.1, square_width, square_height);
+						let c = Color::from_rgb(square.2.0, square.2.1, square.2.2);
+						draw_rect_fill(a.0, a.1, a.2, a.3, c);
 					}//end painting dominant color to entirety of each square
 					ImageSurface::pop_current();
+					canvas_frame.redraw();
 
-					println!("Did stuff");
+					println!("Performed Squareularization");
+					true
 				},
 				_ => return false,
 			}
 		} else {return false;}
-
-		true
 	}//end squareularize_canvas(canvas)
 
 	/// # update_canvas(&mut self)
