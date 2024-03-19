@@ -1,6 +1,6 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use fltk::{app::{self, Sender}, button::Button, draw::{draw_line, draw_point, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
+use fltk::{app::{self, Sender}, button::Button, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
 use crate::gui::gui_utils::get_default_tab_padding;
 
@@ -30,6 +30,7 @@ pub struct CaveGenGroup {
 	ux_squares_width_counter: Counter,
 	ux_squares_height_counter: Counter,
 	ux_squares_pixel_diameter_counter: Counter,
+	ux_sub_pixel_scale: i32,
 }//end struct CaveGenGroup
 
 impl Default for CaveGenGroup {
@@ -47,6 +48,7 @@ impl Default for CaveGenGroup {
 			ux_squares_width_counter: Default::default(),
 			ux_squares_height_counter: Default::default(),
 			ux_squares_pixel_diameter_counter: Default::default(),
+			ux_sub_pixel_scale: 8,
 		};
 		cave_gen_group.ux_whole_tab_group.end();
 		cave_gen_group.ux_cave_canvas_scroll.end();
@@ -644,6 +646,93 @@ impl CaveGenGroup {
 		self.ux_cave_canvas_scroll.redraw();
 		self.ux_cave_canvas_frame.redraw();
 	}//end update_image_size_and_height(prev_w, prev_h)
+
+	/// This function takes a mutable reference to an image surface and performs operations on it
+	/// to squareularize it.  
+	/// This function will return false if some part of this process is unsuccessful, or true if things went okay.  
+	/// Arguments:  
+	/// - canvas - the image surface you want to squareularize  
+	/// - pixel_scale - how many pixels are in one grid square
+	/// - sub_pixel_scale - scale of sub-grid within each grid square
+	fn ux_squareularize_canvas(canvas: &mut ImageSurface, pixel_scale: &i32, sub_pixel_scale: &i32) -> bool {
+		if let Some(cur_img) = canvas.image() {
+			match cur_img.depth() {
+				fltk::enums::ColorDepth::Rgb8 => {
+					// // soft todo: optimization throughout this function
+					let raw_pixel_data = cur_img.to_rgb_data();
+
+					// convert out pixel Vec<u8> into a Vec<u8,u8,u8> for RGB
+					let mut rgb_pixel_vec = Vec::new();
+					let mut rgb_trio = Vec::new();
+					for val in raw_pixel_data {
+						rgb_trio.push(val);
+						if rgb_trio.len() >= 3 {
+							let r = rgb_trio[0];
+							let g = rgb_trio[1];
+							let b = rgb_trio[2];
+							rgb_pixel_vec.push((r,g,b));
+						}//end if we're ready to push
+					}//end packing raw pixel data into rgb data
+
+					// figure out list of bounds for squares in our grid
+					let square_scale = pixel_scale * sub_pixel_scale;
+					let square_width = cur_img.width() / square_scale;
+					let square_height = cur_img.height() / square_scale;
+					// format of (x, y, Color), assume square_width and square_height, fill in color later
+					let mut squares: Vec<(i32, i32, Color)> = Vec::new();
+					for x in (0..cur_img.width()).step_by(square_width as usize) {
+						for y in (0..cur_img.height()).step_by(square_height as usize) {
+							squares.push((x,y,Color::Cyan));
+						}//end looping over all potential y values for sub-squares
+					}//end looping over all potential x values for sub-squares
+
+					// figure out dominant color in each square 
+					for square in &mut squares {
+						// figure out dominant color here, set square.2 to that
+						// color_counts1 and color_counts2 are parallel
+						let mut color_counts1: Vec<Color> = Vec::new();
+						let mut color_counts2: Vec<u64> = Vec::new();
+						for x in square.0..square_width {
+							for y in square.1..square_height {
+								let this_overall_index = (y * cur_img.width()) + x;
+								let this_rgb = rgb_pixel_vec[this_overall_index as usize];
+								let this_color = Color::from_rgb(this_rgb.0, this_rgb.1, this_rgb.2);
+								if let Some(color_index) = color_counts1.iter().position(|&c| c == this_color) {
+									color_counts2[color_index] += 1;
+								} else {
+									color_counts1.push(this_color);
+									color_counts2.push(1);
+								}//end else we need to add new entry to color counts
+							}//end looping over all y values within square
+						}//end looping over all x values within square
+						
+						// check to see which color has the highest count
+						let mut running_most = (Color::White, 0);
+						for (i, count) in color_counts2.iter().enumerate() {
+							if *count > running_most.1 { running_most = (color_counts1[i], color_counts2[i]); }
+						}//end getting the color that's most common from color counts
+						*square = (square.0, square.1, running_most.0);
+					}//end figuring out which color is dominant
+
+					// paint dominant color to entire square using the canvas
+					ImageSurface::push_current(&canvas);
+					for square in &mut squares {
+						for x in square.0..square_width {
+							for y in square.1..square_height {
+								draw_rect_fill(x, y, square_width, square_height, square.2);
+							}//end looping over all y values within square
+						}//end looping over all x values within square
+					}//end painting dominant color to entirety of each square
+					ImageSurface::pop_current();
+
+					println!("Did stuff");
+				},
+				_ => return false,
+			}
+		} else {return false;}
+
+		true
+	}//end squareularize_canvas(canvas)
 
 	/// # update_canvas(&mut self)
 	/// This function updates the size of the drawing canvas based on user settings. 
