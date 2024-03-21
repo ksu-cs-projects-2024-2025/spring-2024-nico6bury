@@ -48,7 +48,7 @@ impl Default for CaveGenGroup {
 			ux_squares_width_counter: Default::default(),
 			ux_squares_height_counter: Default::default(),
 			ux_squares_pixel_diameter_counter: Default::default(),
-			ux_sub_pixel_scale: 8,
+			ux_sub_pixel_scale: 10,
 		};
 		cave_gen_group.ux_whole_tab_group.end();
 		cave_gen_group.ux_cave_canvas_scroll.end();
@@ -136,6 +136,9 @@ impl CaveGenGroup {
 		ux_exterior_level_connections_flex.set_frame(FrameType::BorderBox);
 		self.ux_whole_tab_group.add(&ux_exterior_level_connections_flex);
 
+		// set up all controls within ux_exterior_level_connections_flex
+		self.initialize_level_connection_settings(&mut ux_exterior_level_connections_flex);
+
 		// image display part of canvas
 		self.update_image_size_and_drawing();
 	}//end initialize()
@@ -143,6 +146,10 @@ impl CaveGenGroup {
 	/// # initialize_canvas_settings(self, ux_exterior_flex)
 	/// Helper method of initialize() to setup widgets within the exterior canvas settings flex.
 	fn initialize_canvas_settings(&mut self, ux_exterior_flex: &mut Flex, msg_sender: &Sender<String>) {
+		// label for this section
+		let ux_canvas_setting_section_label = Frame::default().with_label("Canvas Settings");
+		ux_exterior_flex.add(&ux_canvas_setting_section_label);
+		
 		// interior level number horizontal flex 1
 		let mut ux_interior_level_number_hor_flex_1 = Flex::default()
 			.with_pos(ux_exterior_flex.x(), ux_exterior_flex.y())
@@ -263,7 +270,7 @@ impl CaveGenGroup {
 			.with_size(50, 25)
 			.with_align(Align::TopLeft);
 		self.ux_squares_pixel_diameter_counter.set_value(8.0);
-		self.ux_squares_pixel_diameter_counter.set_minimum(1.0);
+		self.ux_squares_pixel_diameter_counter.set_minimum(5.0);
 		self.ux_squares_pixel_diameter_counter.set_maximum(30.0);
 		self.ux_squares_pixel_diameter_counter.set_precision(0);
 		self.ux_squares_pixel_diameter_counter.set_step(1.0, 10);
@@ -289,6 +296,10 @@ impl CaveGenGroup {
 	/// 
 	/// This function, as a helper function for initialize(), sets up widgets for drawing settings flex.
 	fn initialize_drawing_settings(&mut self, ux_exterior_flex: &mut Flex) {
+		// label for this section
+		let ux_drawing_setting_section_label = Frame::default().with_label("Drawing Settings");
+		ux_exterior_flex.add(&ux_drawing_setting_section_label);
+		
 		// flex for holding active/inactive identifiers
 		let mut ux_interior_flex_1 = Flex::default()
 			.with_pos(ux_exterior_flex.x(), ux_exterior_flex.y())
@@ -486,7 +497,7 @@ impl CaveGenGroup {
 	/// This function, as a helper function for initialize(), sets up widgets for CA settings flex.
 	fn initialize_cellular_automata_settings(&mut self, ux_exterior_flex: &mut Flex, msg_sender: &Sender<String>) {
 		let ux_settings_label = Frame::default()
-		.with_label("Cellular Automata Controls\n(Requires Squareularity)");
+		.with_label("Cellular Automata Controls");
 			// .with_size(ux_exterior_flex.width(), 50)
 			// .with_pos(ux_exterior_flex.x(), ux_exterior_flex.y())
 		ux_exterior_flex.add(&ux_settings_label);
@@ -559,7 +570,15 @@ impl CaveGenGroup {
 		// button for actually starting generation
 		let mut ux_run_ca_btn = Button::default().with_label("Run Generation");
 		ux_run_ca_btn.emit(msg_sender.clone(), "CaveGen:CA:RunGeneration".to_string());
+		ux_exterior_flex.add(&ux_run_ca_btn);
 	}//end initialize_cellular_automata_settings()
+
+	/// This function, as a helper function for initialize(), sets up widgets for level connections
+	fn initialize_level_connection_settings(&mut self, ux_exterior_flex: &mut Flex) {
+		// set up label for this section
+		let ux_level_connection_settings_section_label = Frame::default().with_label("Level Connection Settings");
+		ux_exterior_flex.add(&ux_level_connection_settings_section_label);
+	}//end initialize_level_connection_settings(&mut self, ux_exterior_flex)
 
 	/// # update_image_size_and_drawing(&mut self)
 	/// This function creates/updates the canvas surface for drawing cave stuff with the right size.  
