@@ -30,7 +30,7 @@ pub struct CaveGenGroup {
 	ux_squares_width_counter: Counter,
 	ux_squares_height_counter: Counter,
 	ux_squares_pixel_diameter_counter: Counter,
-	ux_sub_pixel_scale: i32,
+	ux_sub_pixel_scale: usize,
 }//end struct CaveGenGroup
 
 impl Default for CaveGenGroup {
@@ -661,6 +661,7 @@ impl CaveGenGroup {
 						true
 					},
 					Event::Released => {
+						let pixel_scale = *pixel_scale as usize;
 						CaveGenGroup::ux_squareularize_canvas(&surface, &pixel_scale, &sub_pixel_scale_ref);
 						f.redraw();
 						true
@@ -677,12 +678,12 @@ impl CaveGenGroup {
 	/// This function takes a mutable reference to an image surface and performs operations on it
 	/// to squareularize it.  
 	/// This function will return false if some part of this process is unsuccessful, or true if things went okay.  
-	/// If is recommended to call redraw() on the frame holding [canvas] after calling this method.
+	/// It is recommended to call redraw() on the frame holding [canvas] after calling this method.
 	/// Arguments:  
 	/// - canvas - the image surface you want to squareularize 
 	/// - pixel_scale - how many pixels are in one grid square
 	/// - sub_pixel_scale - scale of sub-grid within each grid square
-	fn ux_squareularize_canvas(canvas: &ImageSurface, pixel_scale: &i32, sub_pixel_scale: &i32) -> bool {
+	fn ux_squareularize_canvas(canvas: &ImageSurface, pixel_scale: &usize, sub_pixel_scale: &usize) -> Option<Vec<(usize,usize,(u8,u8,u8))>> {
 		match Self::squareularization_get_rgb_pixels(canvas) {
 			Some(image_and_pixels) => {
 				let image = image_and_pixels.0;
@@ -704,12 +705,52 @@ impl CaveGenGroup {
 				// paint dominant color to entire square using the canvas
 				Self::squareularization_color_squares(canvas, &squares, &square_width, &square_height, &true);
 
-				println!("Performed Squareularization");
-				true
+				return Some(squares);
 			},
-			None => {println!("Squareularization Failed. Couldn't get image from canvas, or pixels weren't in RGB color depth 3."); return false},
+			None => {println!("Squareularization Failed. Couldn't get image from canvas, or pixels weren't in RGB color depth 3."); return None;},
 		}//end matching image get result
 	}//end ux_squareularize_canvas(canvas)
+
+	/// Gets squareularized grid and returns that grid, 
+	/// including dominant color for each square.
+	pub fn get_squareularization(&mut self) -> Option<(usize,usize,Vec<(usize,usize,(u8,u8,u8))>)> {
+		match Self::squareularization_get_rgb_pixels(&self.ux_cave_canvas_image.as_ref().borrow()) {
+			Some(image_and_pixels) => {
+				let image = image_and_pixels.0;
+				let pixels = image_and_pixels.1;
+				let img_width = image.width() as usize;
+				let img_height = image.height() as usize;
+				let pixel_scale = self.ux_squares_pixel_diameter_counter.value() as usize;
+				let sub_pixel_scale = self.ux_sub_pixel_scale;
+				let square_scale = pixel_scale * sub_pixel_scale;
+				let square_width = img_width / square_scale;
+				let square_height = img_height / square_scale;
+
+				let mut squares = Self::squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height);
+
+				Self::squareularization_get_dominant_color(&mut squares, &pixels, &img_width, &square_width, &square_height);
+
+				Some((square_width,square_height,squares))
+			},
+			None => None,
+		}//end matching squareularization result
+	}//end get_squareularization(&mut self)
+
+	/// Sets the canvas based on a squareularization.  
+	/// The color from square_info is set to the square in question.  
+	/// This function might panic under a variety of circumstances. 
+	/// See [CaveGenGroup]::[squareularization_color_squares()] 
+	/// for more information, as calls to that function are the 
+	/// main reasonf for panics.
+	pub fn set_squareularization(&mut self, square_info: &(usize,usize,Vec<(usize,usize,(u8,u8,u8))>)) {
+		let canvas = self.ux_cave_canvas_image.as_ref().borrow();
+		
+		let square_width = square_info.0;
+		let square_height = square_info.1;
+		let squares = &square_info.2;
+
+		Self::squareularization_color_squares(&canvas, squares, &square_width, &square_height, &false);
+	}//end set_squareularization(&mut self, square_info)
 
 	/// Helper function for ux_squareularize_canvas
 	/// 

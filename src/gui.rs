@@ -262,4 +262,22 @@ impl GUI {
 	pub fn update_cave_canvas(&mut self) {
 		self.ux_cave_gen_tab.update_canvas();
 	}//end update_cave_canvas
+
+	/// Gets representation of grid of color from cave canvas.
+	/// First two elements in Vector are width and height of each square.  
+	/// Format of vec is x,y coord of upper left of each square, plus color for that square in RGB.  
+	/// It should be noted that squares might overlap.
+	pub fn get_cave_canvas_squareularization(&mut self) -> Option<(usize,usize,Vec<(usize,usize,(u8,u8,u8))>)> {
+		self.ux_cave_gen_tab.get_squareularization()
+	}//end get_cave_canvas_squareularization()
+
+	/// Sets the canvas stuff in cave canvas based on [square_info].  
+	/// Format for [square_info] should be the same as format for [get_cave_canvas_squareularization()].  
+	/// This function calls CaveGenGroup::[squareularization_color_squares()], which might panic under a 
+	/// variety of circumstances, mostly from type conversion (usize to i32) or from the canvas size shrinking 
+	/// in between getting and setting squareularization. For more information on how the function might panic, 
+	/// refer back to [CaveGenGroup]::[squareularization_color_squares()].
+	pub fn set_cave_canvas_squareularization(&mut self, square_info: &(usize,usize,Vec<(usize,usize,(u8,u8,u8))>)) {
+		self.ux_cave_gen_tab.set_squareularization(square_info);
+	}//end set_cave_canvas_squareularization(self, square_info)
 }//end impl for GUI

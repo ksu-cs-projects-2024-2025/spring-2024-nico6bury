@@ -23,6 +23,23 @@ fn main() {
                     gui.update_cave_canvas();
                     println!("Told cave canvas to update");
                 },
+                "CaveGen:CA:RunGeneration" => {
+                    match gui.get_cave_canvas_squareularization() {
+                        Some(square_info) => {
+                            let square_width = square_info.0;
+                            let square_height = square_info.1;
+                            let squares = square_info.2;
+                            println!("Go some squareularization info from the GUI. Getting ready to run some CA generations.");
+
+                            // TODO: Run those squares through the CA
+
+                            // return out squares back to gui
+                            gui.set_cave_canvas_squareularization(&(square_width, square_height, squares));
+                            println!("Finished CA generations and sent those squareularizations back to the GUI to display.");
+                        },
+                        None => {println!("Couldn't get square info from cave gen canvas. We can't start doing CA like this.");}
+                    };
+                },
                 _ => {
                     println!("Value not recognized: {}", val);
                 },
