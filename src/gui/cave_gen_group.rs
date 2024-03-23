@@ -741,7 +741,7 @@ impl CaveGenGroup {
 	/// This function might panic under a variety of circumstances. 
 	/// See [CaveGenGroup]::[squareularization_color_squares()] 
 	/// for more information, as calls to that function are the 
-	/// main reasonf for panics.
+	/// main reason for panics.
 	pub fn set_squareularization(&mut self, square_info: &(usize,usize,Vec<(usize,usize,(u8,u8,u8))>)) {
 		let canvas = self.ux_cave_canvas_image.as_ref().borrow();
 		
@@ -750,6 +750,7 @@ impl CaveGenGroup {
 		let squares = &square_info.2;
 
 		Self::squareularization_color_squares(&canvas, squares, &square_width, &square_height, &false);
+		self.ux_cave_canvas_frame.redraw();
 	}//end set_squareularization(&mut self, square_info)
 
 	/// Helper function for ux_squareularize_canvas
