@@ -46,17 +46,52 @@ pub struct SquareGrid {
 	squares: Vec<Square>,
 	img_width: usize,
 	img_height: usize,
+	rows: usize,
+	cols: usize,
 }//end struct SquareGrid
 
 #[allow(dead_code)]
 impl SquareGrid {
-	pub fn from_squares(squares: Vec<Square>, img_width: usize, img_height: usize) -> SquareGrid {
-		// TODO: Parse squares to ensure everything fits within img_bounds
-		SquareGrid {
+	/// - The only way to create a SquareGrid is with a vec of Squares and the dimensions of the original image.  
+	/// - When a SquareGrid is created, the bounds of each Square is checked ot ensure that no Squares exceed
+	/// the bounds of the given image dimensions.  
+	/// - Since the bounds of Square objects cannot change after initialization, this means
+	/// that all bounds in every Square object within a SquareGrid should be valid for the given image dimensions.  
+	/// ## Err Conditions
+	/// This function returns Err() if:  
+	/// - a square is found whose bounds exceed image dimensions  
+	/// ## Not Checked
+	/// This function does not check if:  
+	/// - squares have bounds that overlap with each other
+	/// - squares completely cover all pixels within image dimensions
+	pub fn from_squares(squares: Vec<Square>, img_width: usize, img_height: usize) -> Result<SquareGrid, (Square, String)> {
+		// keep track of unique x values within squares, number of cols
+		let mut x_col_track: Vec<usize> = Vec::new();
+		// keep track of unique y values within squares, number of rows
+		let mut y_row_track: Vec<usize> = Vec::new();
+
+		for square in &squares {
+			// add new x to x_col_track
+			if !x_col_track.contains(&&square.x) { x_col_track.push(square.x); }
+			// add new y to y_row_track
+			if !y_row_track.contains(&&square.y) { y_row_track.push(square.y); }
+			// do bounds checking to ensure this square fits within img_width and img_height
+			if square.x + square.width > img_width || square.y + square.height > img_height {
+				let complaint = format!("Square with x:{0}, y:{1}, w:{2}, h:{3} has invalid bounds.\nFurthest x,y reach of square is ({4},{5}), while image has width of {6} and height of {7}.\nThe color of this square is {8:?}.", square.x, square.y, square.width, square.height, square.x + square.width, square.y + square.height, img_width, img_height, square.color);
+				return Err((*square, complaint));
+			}//end if this square has invalid bounds
+		}//end looping through all squares
+
+		let col_count = x_col_track.len();
+		let row_count = y_row_track.len();
+
+		Ok(SquareGrid {
 			squares,
 			img_width,
 			img_height,
-		}//end struct init
+			rows: row_count,
+			cols: col_count,
+		})//end struct init
 	}//end from_squares
 
 	/// Allows immutable iteration through squares
@@ -67,7 +102,15 @@ impl SquareGrid {
 	pub fn img_width(&self) -> &usize { &self.img_width }
 	/// Height of original image when square info was taken.
 	pub fn img_height(&self) -> &usize { &self.img_height }
+	/// Number of rows of squares.  
+	/// Calculated as the number of unique y values of squares.
+	pub fn rows(&self) -> &usize { &self.rows }
+	/// Number of cols of squares.  
+	/// Calculated as the number of unique x values of squares.
+	pub fn cols(&self) -> &usize { &self.cols }
 
+	// TODO: Add checking to ensure get functions won't panic
+	// TODO: Add functions to get number of total rows and columns in SquareGrid
 	/// Gets a reference to the square at the specified location
 	pub fn get(&self, row: &usize, col: &usize) -> &Square { &self.squares[col * self.img_width + row] }
 	/// Gets a mutable reference to the square at the specified location

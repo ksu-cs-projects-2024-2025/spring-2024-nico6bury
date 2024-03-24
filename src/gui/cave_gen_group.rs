@@ -697,17 +697,23 @@ impl CaveGenGroup {
 				let square_width = img_width / square_scale;
 				let square_height = img_height / square_scale;
 				// format of (x, y, Color), assume square_width and square_height, fill in color later
-				let mut squares = Self::squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height);
-
-				// figure out dominant color in each square, replacing color value in vec
-				Self::squareularization_get_dominant_color(&mut squares, &pixels, &img_width, &square_width, &square_height);
-
-				// paint dominant color to entire square using the canvas
-				Self::squareularization_color_squares(canvas, &squares, &true);
-
-				return Some(squares);
+				match Self::squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height) {
+					Some(mut squares) => {
+						// figure out dominant color in each square, replacing color value in vec
+						Self::squareularization_get_dominant_color(&mut squares, &pixels, &img_width, &square_width, &square_height);
+		
+						// paint dominant color to entire square using the canvas
+						Self::squareularization_color_squares(canvas, &squares, &true);
+		
+						Some(squares)
+					},
+					None => {
+						println!("Couldn't split img to squares. It is likely that a SquareGrid could not be created from Square Vec.");
+						None
+					}
+				}
 			},
-			None => {println!("Squareularization Failed. Couldn't get image from canvas, or pixels weren't in RGB color depth 3."); return None;},
+			None => {println!("Squareularization Failed. Couldn't get image from canvas, or pixels weren't in RGB color depth 3."); None },
 		}//end matching image get result
 	}//end ux_squareularize_canvas(canvas)
 
@@ -726,12 +732,16 @@ impl CaveGenGroup {
 				let square_width = img_width / square_scale;
 				let square_height = img_height / square_scale;
 
-				let mut squares = Self::squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height);
-
-				Self::squareularization_get_dominant_color(&mut squares, &pixels, &img_width, &square_width, &square_height);
-
-				Some(squares)
-			},
+				match Self::squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height) {
+					Some(mut squares) => {
+						Self::squareularization_get_dominant_color(&mut squares, &pixels, &img_width, &square_width, &square_height);
+		
+						Some(squares)
+					},
+					None => {
+						println!("Couldn't get squareularization. It is likely that a SquareGrid could not be parsed.");
+						None
+					}}},
 			None => None,
 		}//end matching squareularization result
 	}//end get_squareularization(&mut self)
@@ -794,7 +804,7 @@ impl CaveGenGroup {
 	/// to be used in later processing.
 	/// - There are cases when the image cannot be split evenly into squares of the same size.
 	/// In such a case, the squares along the bottom or right edge of the image will overlap slightly.
-	fn squareularization_split_img_to_squares(img_width: &usize, img_height: &usize, square_width: &usize, square_height: &usize) -> SquareGrid {
+	fn squareularization_split_img_to_squares(img_width: &usize, img_height: &usize, square_width: &usize, square_height: &usize) -> Option<SquareGrid> {
 		let mut squares: Vec<Square> = Vec::new();
 		// format of (x, y, Color), assume square_width and square_height, fill in color later
 		for mut x in (0..*img_width).step_by(*square_width) {
@@ -807,8 +817,15 @@ impl CaveGenGroup {
 				squares.push(square);
 			}//end looping over all potential y values for sub-squares
 		}//end looping over all potential x values for sub-squares
-		let square_grid = SquareGrid::from_squares(squares, *img_width, *img_height);
-		return square_grid;
+		match SquareGrid::from_squares(squares, *img_width, *img_height) {
+			Ok(square_grid) => {
+				Some(square_grid)
+			},
+			Err(err_info) => {
+				println!("Recieved an error when converting squares to SquareGrid. Printing it below:");
+				println!("{}", err_info.1);
+				None
+			}}
 	}//end squareularization_split_img_to_squares
 
 	/// Helper function for ux_squareularize_canvas
