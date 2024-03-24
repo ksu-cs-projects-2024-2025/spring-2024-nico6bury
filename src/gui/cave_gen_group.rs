@@ -849,7 +849,6 @@ impl CaveGenGroup {
 			}//end getting the color that's most common from color counts
 			square.set_color(running_most.0);
 		}//end figuring out which color is dominant
-		println!("Got dominant colors");
 	}//end squareularization_get_dominant_color()
 
 	/// Helper function for [ux_squareularize_canvas()]
