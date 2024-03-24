@@ -109,10 +109,12 @@ impl SquareGrid {
 	/// Calculated as the number of unique x values of squares.
 	pub fn cols(&self) -> &usize { &self.cols }
 
-	// TODO: Add checking to ensure get functions won't panic
-	// TODO: Add functions to get number of total rows and columns in SquareGrid
-	/// Gets a reference to the square at the specified location
-	pub fn get(&self, row: &usize, col: &usize) -> &Square { &self.squares[col * self.img_width + row] }
-	/// Gets a mutable reference to the square at the specified location
-	pub fn get_mut(&mut self, row: &usize, col: &usize) -> &mut Square { &mut self.squares[col * self.img_width + row] }
+	/// Gets a reference to the square at the specified location, assuming valid indices.
+	pub fn get(&self, row: &usize, col: &usize) -> Option<&Square> { 
+		let index = col * self.img_width + row;
+		if index >= self.squares.len() { Some(&self.squares[index]) } else {None}}
+	/// Gets a mutable reference to the square at the specified location, assuming valid indices.
+	pub fn get_mut(&mut self, row: &usize, col: &usize) -> Option<&mut Square> {
+		let index = col * self.img_width + row;
+		if index >= self.squares.len() { Some(&mut self.squares[index]) } else {None}}
 }//end impl for SquareGrid
