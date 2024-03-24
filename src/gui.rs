@@ -1,6 +1,8 @@
 
 use fltk::{app::{self, App, Receiver, Sender}, button::Button, enums::{FrameType, Shortcut}, group::{Group, Tabs}, menu::{self, SysMenuBar}, prelude::{GroupExt, MenuExt, WidgetExt}, window::Window};
 
+use crate::cellular_automata::SquareGrid;
+
 use self::{cave_gen_group::CaveGenGroup, gui_utils::{get_default_menu_height, get_default_tab_padding, get_default_win_height, get_default_win_width}};
 
 mod gui_utils;
@@ -267,7 +269,7 @@ impl GUI {
 	/// First two elements in Vector are width and height of each square.  
 	/// Format of vec is x,y coord of upper left of each square, plus color for that square in RGB.  
 	/// It should be noted that squares might overlap.
-	pub fn get_cave_canvas_squareularization(&mut self) -> Option<(usize,usize,Vec<(usize,usize,(u8,u8,u8))>)> {
+	pub fn get_cave_canvas_squareularization(&mut self) -> Option<SquareGrid> {
 		self.ux_cave_gen_tab.get_squareularization()
 	}//end get_cave_canvas_squareularization()
 
@@ -277,7 +279,7 @@ impl GUI {
 	/// variety of circumstances, mostly from type conversion (usize to i32) or from the canvas size shrinking 
 	/// in between getting and setting squareularization. For more information on how the function might panic, 
 	/// refer back to [CaveGenGroup]::[squareularization_color_squares()].
-	pub fn set_cave_canvas_squareularization(&mut self, square_info: &(usize,usize,Vec<(usize,usize,(u8,u8,u8))>)) {
-		self.ux_cave_gen_tab.set_squareularization(square_info);
+	pub fn set_cave_canvas_squareularization(&mut self, squares: &SquareGrid) {
+		self.ux_cave_gen_tab.set_squareularization(squares);
 	}//end set_cave_canvas_squareularization(self, square_info)
 }//end impl for GUI

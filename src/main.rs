@@ -1,6 +1,7 @@
 use gui::GUI;
 
 mod gui;
+mod cellular_automata;
 
 fn main() {
     // struct that contains all GUI elements
@@ -25,16 +26,13 @@ fn main() {
                 },
                 "CaveGen:CA:RunGeneration" => {
                     match gui.get_cave_canvas_squareularization() {
-                        Some(square_info) => {
-                            let square_width = square_info.0;
-                            let square_height = square_info.1;
-                            let squares = square_info.2;
+                        Some(squares) => {
                             println!("Go some squareularization info from the GUI. Getting ready to run some CA generations.");
 
                             // TODO: Run those squares through the CA
 
                             // return out squares back to gui
-                            gui.set_cave_canvas_squareularization(&(square_width, square_height, squares));
+                            gui.set_cave_canvas_squareularization(&squares);
                             println!("Finished CA generations and sent those squareularizations back to the GUI to display.");
                         },
                         None => {println!("Couldn't get square info from cave gen canvas. We can't start doing CA like this.");}

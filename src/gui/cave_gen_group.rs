@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use fltk::{app::{self, Sender}, button::Button, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
-use crate::gui::gui_utils::get_default_tab_padding;
+use crate::{cellular_automata::{Square, SquareGrid}, gui::gui_utils::get_default_tab_padding};
 
 /// # enum DrawState
 /// This enum represents the current drawing state for the canvas.
@@ -683,7 +683,7 @@ impl CaveGenGroup {
 	/// - canvas - the image surface you want to squareularize 
 	/// - pixel_scale - how many pixels are in one grid square
 	/// - sub_pixel_scale - scale of sub-grid within each grid square
-	fn ux_squareularize_canvas(canvas: &ImageSurface, pixel_scale: &usize, sub_pixel_scale: &usize) -> Option<Vec<(usize,usize,(u8,u8,u8))>> {
+	fn ux_squareularize_canvas(canvas: &ImageSurface, pixel_scale: &usize, sub_pixel_scale: &usize) -> Option<SquareGrid> {
 		match Self::squareularization_get_rgb_pixels(canvas) {
 			Some(image_and_pixels) => {
 				let image = image_and_pixels.0;
@@ -697,13 +697,13 @@ impl CaveGenGroup {
 				let square_width = img_width / square_scale;
 				let square_height = img_height / square_scale;
 				// format of (x, y, Color), assume square_width and square_height, fill in color later
-				let mut squares: Vec<(usize, usize, (u8,u8,u8))> = Self::squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height);
+				let mut squares = Self::squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height);
 
 				// figure out dominant color in each square, replacing color value in vec
 				Self::squareularization_get_dominant_color(&mut squares, &pixels, &img_width, &square_width, &square_height);
 
 				// paint dominant color to entire square using the canvas
-				Self::squareularization_color_squares(canvas, &squares, &square_width, &square_height, &true);
+				Self::squareularization_color_squares(canvas, &squares, &true);
 
 				return Some(squares);
 			},
@@ -713,7 +713,7 @@ impl CaveGenGroup {
 
 	/// Gets squareularized grid and returns that grid, 
 	/// including dominant color for each square.
-	pub fn get_squareularization(&mut self) -> Option<(usize,usize,Vec<(usize,usize,(u8,u8,u8))>)> {
+	pub fn get_squareularization(&mut self) -> Option<SquareGrid> {
 		match Self::squareularization_get_rgb_pixels(&self.ux_cave_canvas_image.as_ref().borrow()) {
 			Some(image_and_pixels) => {
 				let image = image_and_pixels.0;
@@ -730,7 +730,7 @@ impl CaveGenGroup {
 
 				Self::squareularization_get_dominant_color(&mut squares, &pixels, &img_width, &square_width, &square_height);
 
-				Some((square_width,square_height,squares))
+				Some(squares)
 			},
 			None => None,
 		}//end matching squareularization result
@@ -742,14 +742,10 @@ impl CaveGenGroup {
 	/// See [CaveGenGroup]::[squareularization_color_squares()] 
 	/// for more information, as calls to that function are the 
 	/// main reason for panics.
-	pub fn set_squareularization(&mut self, square_info: &(usize,usize,Vec<(usize,usize,(u8,u8,u8))>)) {
+	pub fn set_squareularization(&mut self, squares: &SquareGrid) {
 		let canvas = self.ux_cave_canvas_image.as_ref().borrow();
-		
-		let square_width = square_info.0;
-		let square_height = square_info.1;
-		let squares = &square_info.2;
 
-		Self::squareularization_color_squares(&canvas, squares, &square_width, &square_height, &false);
+		Self::squareularization_color_squares(&canvas, squares,&false);
 		self.ux_cave_canvas_frame.redraw();
 	}//end set_squareularization(&mut self, square_info)
 
@@ -798,8 +794,8 @@ impl CaveGenGroup {
 	/// to be used in later processing.
 	/// - There are cases when the image cannot be split evenly into squares of the same size.
 	/// In such a case, the squares along the bottom or right edge of the image will overlap slightly.
-	fn squareularization_split_img_to_squares(img_width: &usize, img_height: &usize, square_width: &usize, square_height: &usize) -> Vec<(usize, usize,(u8,u8,u8))> {
-		let mut squares: Vec<(usize, usize, (u8,u8,u8))> = Vec::new();
+	fn squareularization_split_img_to_squares(img_width: &usize, img_height: &usize, square_width: &usize, square_height: &usize) -> SquareGrid {
+		let mut squares: Vec<Square> = Vec::new();
 		// format of (x, y, Color), assume square_width and square_height, fill in color later
 		for mut x in (0..*img_width).step_by(*square_width) {
 			// Squares at edges might overlap, but they won't be out of bounds
@@ -807,10 +803,12 @@ impl CaveGenGroup {
 			for mut y in (0..*img_height).step_by(*square_height) {
 				// Squares at edges might overlap, but they won't be out of bounds
 				if y + square_height > *img_height {y = img_height - square_height;}
-				squares.push((x,y,Color::Cyan.to_rgb()));
+				let square = Square::new(x,y, *square_width, *square_height);
+				squares.push(square);
 			}//end looping over all potential y values for sub-squares
 		}//end looping over all potential x values for sub-squares
-		return squares;
+		let square_grid = SquareGrid::from_squares(squares, *img_width, *img_height);
+		return square_grid;
 	}//end squareularization_split_img_to_squares
 
 	/// Helper function for ux_squareularize_canvas
@@ -820,33 +818,37 @@ impl CaveGenGroup {
 	/// - If this function panics, it is mostly likely a result of
 	/// the bounds of a square exceeding image bounds, causing the
 	/// function to attempt accessing a pixel that doesn't exist.
-	fn squareularization_get_dominant_color(squares: &mut Vec<(usize,usize,(u8,u8,u8))>, pixels: &Vec<(u8,u8,u8)> ,img_width: &usize, square_width: &usize, square_height: &usize) {
-		for square in squares {
+	fn squareularization_get_dominant_color(squares: &mut SquareGrid, pixels: &Vec<(u8,u8,u8)> ,img_width: &usize, square_width: &usize, square_height: &usize) {
+		/*
+		square.0 refers to square width, square.1 refers to square height
+		 */
+		for square in squares.iter_mut() {
 			// figure out dominant color here, set square.2 to that
 			// color_counts1 and color_counts2 are parallel
-			let mut color_counts1: Vec<(u8,u8,u8)> = Vec::new();
-			let mut color_counts2: Vec<u64> = Vec::new();
-			for y in square.1..(square_height + square.1) {
-				for x in square.0..(square_width + square.0) {
+			let mut color_counts_color: Vec<(u8,u8,u8)> = Vec::new();
+			let mut color_counts_count: Vec<u64> = Vec::new();
+			for y in *square.y()..(square_height + square.y()) {
+				for x in *square.x()..(square_width + square.x()) {
 					let this_overall_index = (y * img_width) + x;
 					let this_rgb = pixels[this_overall_index];
 					let this_color = (this_rgb.0, this_rgb.1, this_rgb.2);
-					if let Some(color_index) = color_counts1.iter().position(|&c| c == this_color) {
-						color_counts2[color_index] += 1;
+					if let Some(color_index) = color_counts_color.iter().position(|&c| c == this_color) {
+						color_counts_count[color_index] += 1;
 					} else {
-						color_counts1.push(this_color);
-						color_counts2.push(1);
+						color_counts_color.push(this_color);
+						color_counts_count.push(1);
 					}//end else we need to add new entry to color counts
 				}//end looping over all x values within square
 			}//end looping over all y values within square
 
 			// check to see which color has the highest count
 			let mut running_most = ((40,40,40), 0);
-			for (i, count) in color_counts2.iter().enumerate() {
-				if *count > running_most.1 { running_most = (color_counts1[i], color_counts2[i]); }
+			for (i, count) in color_counts_count.iter().enumerate() {
+				if *count > running_most.1 { running_most = (color_counts_color[i], color_counts_count[i]); }
 			}//end getting the color that's most common from color counts
-			*square = (square.0, square.1, running_most.0);
+			square.set_color(running_most.0);
 		}//end figuring out which color is dominant
+		println!("Got dominant colors");
 	}//end squareularization_get_dominant_color()
 
 	/// Helper function for [ux_squareularize_canvas()]
@@ -870,19 +872,16 @@ impl CaveGenGroup {
 	/// be accessed, the type conversion to i32 fails, or 
 	/// the dimensions calculated exceed the image bounds, a 
 	/// panic might happen.
-	fn squareularization_color_squares(canvas: &ImageSurface, squares: &Vec<(usize,usize,(u8,u8,u8))>, square_width: &usize, square_height: &usize, use_debug_color: &bool) {
+	fn squareularization_color_squares(canvas: &ImageSurface, squares: &SquareGrid, use_debug_color: &bool) {
 		ImageSurface::push_current(&canvas);
 		if *use_debug_color {
-			let last_square = squares.last().unwrap();
-			let img_width = last_square.0 + square_width;
-			let img_height = last_square.1 + square_height;
 			// paint magenta to entire canvas as debugging
-			draw_rect_fill(0, 0, img_width as i32, img_height as i32, Color::Magenta);
+			draw_rect_fill(0, 0, *squares.img_width() as i32, *squares.img_height() as i32, Color::Magenta);
 		}//end if we're doing a debug fill
 		// paint dominant color to entire square using the canvas
-		for square in squares {
-			let a = (square.0 as i32, square.1 as i32, *square_width as i32, *square_height as i32);
-			let c = Color::from_rgb(square.2.0, square.2.1, square.2.2);
+		for square in squares.iter() {
+			let a = (*square.x() as i32, *square.y() as i32, *square.width() as i32, *square.height() as i32);
+			let c = Color::from_rgb(square.color().0, square.color().1, square.color().2);
 			draw_rect_fill(a.0, a.1, a.2, a.3, c);
 		}//end painting dominant color to entirety of each square
 		ImageSurface::pop_current();
