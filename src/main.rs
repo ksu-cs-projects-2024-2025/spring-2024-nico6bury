@@ -1,6 +1,7 @@
 use gui::GUI;
 
 mod gui;
+mod squares;
 mod cellular_automata;
 
 fn main() {

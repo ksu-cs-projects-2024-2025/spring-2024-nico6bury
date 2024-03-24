@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use fltk::{app::{self, Sender}, button::Button, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
-use crate::{cellular_automata::{Square, SquareGrid}, gui::gui_utils::get_default_tab_padding};
+use crate::{squares::{Square, SquareGrid}, gui::gui_utils::get_default_tab_padding};
 
 /// # enum DrawState
 /// This enum represents the current drawing state for the canvas.
