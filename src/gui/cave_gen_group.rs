@@ -842,6 +842,7 @@ impl CaveGenGroup {
 			}//end looping over all y values within square
 
 			// check to see which color has the highest count
+			// TODO: Prefer [0,0,0] [255,255,255] [0,255,0] [255,0,0] [0,0,255]
 			let mut running_most = ((40,40,40), 0);
 			for (i, count) in color_counts_count.iter().enumerate() {
 				if *count > running_most.1 { running_most = (color_counts_color[i], color_counts_count[i]); }
