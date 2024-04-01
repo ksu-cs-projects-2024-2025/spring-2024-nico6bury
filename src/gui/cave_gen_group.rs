@@ -598,7 +598,7 @@ impl CaveGenGroup {
 		
 		ImageSurface::push_current(&canvas_surface);
 		// TODO: Redo filling to not reset previous work, probably by copying drawings out of old surface image, maybe by using fltk::draw_image or fltk::draw_rbg and limiting size of image? If changing resolution, might need to grid-ify first
-		fltk::draw::draw_rect_fill(0,0,self.ux_cave_canvas_frame.width(), self.ux_cave_canvas_frame.height(), Color::White);
+		fltk::draw::draw_rect_fill(0,0,self.ux_cave_canvas_frame.width(), self.ux_cave_canvas_frame.height(), Color::Black);
 		ImageSurface::pop_current();
 
 		self.ux_cave_canvas_image = Rc::from(RefCell::from(canvas_surface));
