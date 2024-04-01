@@ -1,5 +1,7 @@
 use gui::GUI;
 
+use crate::cellular_automata::CA;
+
 mod gui;
 mod squares;
 mod cellular_automata;
@@ -30,11 +32,19 @@ fn main() {
                         Some(squares) => {
                             println!("Go some squareularization info from the GUI. Getting ready to run some CA generations.");
 
+                            let ca_info = gui.get_cave_canvas_ca_settings();
                             // TODO: Run those squares through the CA
+                            let mut ca_runner = CA::new(ca_info.0, ca_info.1).with_squares(squares);
 
-                            // return out squares back to gui
-                            gui.set_cave_canvas_squareularization(&squares);
-                            println!("Finished CA generations and sent those squareularizations back to the GUI to display.");
+                            for _ in 0..ca_info.2 { ca_runner.run_generation(); }
+
+                            match ca_runner.get_squares() {
+                                Some(changed_squares) => {
+                                    // return out squares back to gui
+                                    gui.set_cave_canvas_squareularization(changed_squares);
+                                    println!("Finished CA generations and sent those squareularizations back to the GUI to display.");
+                                }, None => println!("CA Gen Failed or couldn't get squares."),
+                            }//end matching based on squares
                         },
                         None => {println!("Couldn't get square info from cave gen canvas. We can't start doing CA like this.");}
                     };

@@ -282,4 +282,9 @@ impl GUI {
 	pub fn set_cave_canvas_squareularization(&mut self, squares: &SquareGrid) {
 		self.ux_cave_gen_tab.set_squareularization(squares);
 	}//end set_cave_canvas_squareularization(self, square_info)
+
+	/// Returns neighborhood size, neighborhood threshold, and generations to run from cave canvas group
+	pub fn get_cave_canvas_ca_settings(&self) -> (usize,usize,usize) {
+		self.ux_cave_gen_tab.get_cave_canvas_ca_settings()
+	}//end get_cave_canvas_ca_settings(self)
 }//end impl for GUI

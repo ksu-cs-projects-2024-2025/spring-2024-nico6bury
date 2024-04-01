@@ -31,6 +31,9 @@ pub struct CaveGenGroup {
 	ux_squares_height_counter: Counter,
 	ux_squares_pixel_diameter_counter: Counter,
 	ux_sub_pixel_scale: usize,
+	ux_ca_neighborhood_size_counter: Counter,
+	ux_ca_neighborhood_thresh_counter: Rc<RefCell<Counter>>,
+	ux_ca_generations_to_run_counter: Counter,
 }//end struct CaveGenGroup
 
 impl Default for CaveGenGroup {
@@ -49,6 +52,9 @@ impl Default for CaveGenGroup {
 			ux_squares_height_counter: Default::default(),
 			ux_squares_pixel_diameter_counter: Default::default(),
 			ux_sub_pixel_scale: 10,
+			ux_ca_neighborhood_size_counter: Default::default(),
+			ux_ca_neighborhood_thresh_counter: Default::default(),
+			ux_ca_generations_to_run_counter: Default::default(),
 		};
 		cave_gen_group.ux_whole_tab_group.end();
 		cave_gen_group.ux_cave_canvas_scroll.end();
@@ -535,6 +541,7 @@ impl CaveGenGroup {
 		ux_neighbor_threshold_counter.set_step(1.0, 1);
 		ux_neighbor_threshold_counter.set_type(CounterType::Simple);
 		ux_interior_flex_2.add(&ux_neighbor_threshold_counter);
+		self.ux_ca_neighborhood_thresh_counter = Rc::from(RefCell::from(ux_neighbor_threshold_counter));
 
 		let ux_iterations_label = Frame::default().with_label("Iterations to Run");
 		ux_interior_flex_3.add(&ux_iterations_label);
@@ -546,9 +553,10 @@ impl CaveGenGroup {
 		ux_iterations_counter.set_step(1.0, 5);
 		ux_iterations_counter.set_type(CounterType::Normal);
 		ux_interior_flex_3.add(&ux_iterations_counter);
+		self.ux_ca_generations_to_run_counter = ux_iterations_counter;
 
 		// add handler to counters to ensure bounds are updated
-		let ux_neighbor_threshold_ref = Rc::from(RefCell::from(ux_neighbor_threshold_counter));
+		let ux_neighbor_threshold_ref = self.ux_ca_neighborhood_thresh_counter.clone();
 		ux_neighbor_closeness_counter.handle({
 			let ux_neighbor_threshold_ref = ux_neighbor_threshold_ref.clone();
 			move |c, ev| {
@@ -566,6 +574,9 @@ impl CaveGenGroup {
 				}
 			}
 		});
+
+		self.ux_ca_neighborhood_size_counter = ux_neighbor_closeness_counter;
+		
 
 		// button for actually starting generation
 		let mut ux_run_ca_btn = Button::default().with_label("Run Generation");
@@ -915,6 +926,15 @@ impl CaveGenGroup {
 		self.ux_cave_canvas_frame.set_size(pixels_width as i32, pixels_height as i32);
 		self.update_image_size_and_drawing();
 	}//end update_canvas(self)
+
+	/// gets CA settings for cave canvas.
+	/// Returns neighborhood size, threshold, and generations to run
+	pub fn get_cave_canvas_ca_settings(&self) -> (usize,usize,usize) {
+		let size = self.ux_ca_neighborhood_size_counter.value() as usize;
+		let thresh = self.ux_ca_neighborhood_thresh_counter.as_ref().borrow().value() as usize;
+		let iterations = self.ux_ca_generations_to_run_counter.value() as usize;
+		(size, thresh, iterations)
+	}//end get_cave_canvas_ca_settings()
 }//end impl for CaveGenGroup
 
 widget_extends!(CaveGenGroup, Tile, ux_whole_tab_group);
