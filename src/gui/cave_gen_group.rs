@@ -51,7 +51,7 @@ impl Default for CaveGenGroup {
 			ux_squares_width_counter: Default::default(),
 			ux_squares_height_counter: Default::default(),
 			ux_squares_pixel_diameter_counter: Default::default(),
-			ux_sub_pixel_scale: 10,
+			ux_sub_pixel_scale: 1,
 			ux_ca_neighborhood_size_counter: Default::default(),
 			ux_ca_neighborhood_thresh_counter: Default::default(),
 			ux_ca_generations_to_run_counter: Default::default(),
@@ -276,7 +276,7 @@ impl CaveGenGroup {
 			.with_size(50, 25)
 			.with_align(Align::TopLeft);
 		self.ux_squares_pixel_diameter_counter.set_value(8.0);
-		self.ux_squares_pixel_diameter_counter.set_minimum(5.0);
+		self.ux_squares_pixel_diameter_counter.set_minimum(1.0);
 		self.ux_squares_pixel_diameter_counter.set_maximum(30.0);
 		self.ux_squares_pixel_diameter_counter.set_precision(0);
 		self.ux_squares_pixel_diameter_counter.set_step(1.0, 10);
@@ -705,8 +705,8 @@ impl CaveGenGroup {
 
 				// figure out list of bounds for squares in our grid
 				let square_scale = (pixel_scale * sub_pixel_scale) as usize;
-				let square_width = img_width / square_scale;
-				let square_height = img_height / square_scale;
+				let square_width = square_scale;//img_width / square_scale;
+				let square_height = square_scale;//img_height / square_scale;
 				// format of (x, y, Color), assume square_width and square_height, fill in color later
 				match Self::squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height) {
 					Some(mut squares) => {
@@ -740,8 +740,8 @@ impl CaveGenGroup {
 				let pixel_scale = self.ux_squares_pixel_diameter_counter.value() as usize;
 				let sub_pixel_scale = self.ux_sub_pixel_scale;
 				let square_scale = pixel_scale * sub_pixel_scale;
-				let square_width = img_width / square_scale;
-				let square_height = img_height / square_scale;
+				let square_width = square_scale;//img_width / square_scale;
+				let square_height = square_scale;//img_height / square_scale;
 
 				match Self::squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height) {
 					Some(mut squares) => {
