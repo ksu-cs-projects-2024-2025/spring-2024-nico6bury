@@ -49,6 +49,19 @@ fn main() {
                         None => {println!("Couldn't get square info from cave gen canvas. We can't start doing CA like this.");}
                     };
                 },
+                "CaveGen:Stairs:Remove" => {
+                    let selected_elem_list = gui.get_cave_gen_stairs_selected();
+                    if selected_elem_list.len() != 0 {
+                        let message = format!("Are you sure you want to remove the selected level connections?\nThe following level connections will be lost:\n{}",
+                            selected_elem_list.join(", "));
+                        if GUI::yes_no(&message) {
+                            gui.remove_cave_gen_stairs_selected();
+                        }//end if we're clear to go ahead and remove those things
+                        // println!("{}", message_result);
+                    } else {
+                        GUI::message("No Level Connections Selected. Please select connections to remove.");
+                    }//end else we just need to say that there are no level connections selected
+                },
                 _ => {
                     println!("Value not recognized: {}", val);
                 },

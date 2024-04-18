@@ -1,8 +1,10 @@
 use std::{cell::RefCell, rc::Rc};
 
-use fltk::{app::{self, Sender}, button::Button, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
+use fltk::{app::{self, Sender}, button::Button, dialog, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Pack, PackType, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
 use crate::{squares::{Square, SquareGrid}, gui::gui_utils::get_default_tab_padding};
+
+use super::gui_utils::ListBox;
 
 /// # enum DrawState
 /// This enum represents the current drawing state for the canvas.
@@ -34,6 +36,7 @@ pub struct CaveGenGroup {
 	ux_ca_neighborhood_size_counter: Counter,
 	ux_ca_neighborhood_thresh_counter: Rc<RefCell<Counter>>,
 	ux_ca_generations_to_run_counter: Counter,
+	ux_stairs_list: ListBox<i32>,
 }//end struct CaveGenGroup
 
 impl Default for CaveGenGroup {
@@ -55,6 +58,7 @@ impl Default for CaveGenGroup {
 			ux_ca_neighborhood_size_counter: Default::default(),
 			ux_ca_neighborhood_thresh_counter: Default::default(),
 			ux_ca_generations_to_run_counter: Default::default(),
+			ux_stairs_list: ListBox::new(0, 0, 10, 10, 10),
 		};
 		cave_gen_group.ux_whole_tab_group.end();
 		cave_gen_group.ux_cave_canvas_scroll.end();
@@ -139,11 +143,11 @@ impl CaveGenGroup {
 			.with_size(self.ux_whole_tab_group.width() - (self.ux_cave_canvas_scroll.width() + ux_exterior_canvas_setting_flex.width()), self.ux_whole_tab_group.height());
 		ux_exterior_level_connections_flex.end();
 		ux_exterior_level_connections_flex.set_type(FlexType::Column);
-		ux_exterior_level_connections_flex.set_frame(FrameType::BorderBox);
+		ux_exterior_level_connections_flex.set_frame(FrameType::FlatBox);
 		self.ux_whole_tab_group.add(&ux_exterior_level_connections_flex);
 
 		// set up all controls within ux_exterior_level_connections_flex
-		self.initialize_level_connection_settings(&mut ux_exterior_level_connections_flex);
+		self.initialize_level_connection_settings(&mut ux_exterior_level_connections_flex, &msg_sender);
 
 		// image display part of canvas
 		self.update_image_size_and_drawing();
@@ -585,11 +589,79 @@ impl CaveGenGroup {
 	}//end initialize_cellular_automata_settings()
 
 	/// This function, as a helper function for initialize(), sets up widgets for level connections
-	fn initialize_level_connection_settings(&mut self, ux_exterior_flex: &mut Flex) {
+	fn initialize_level_connection_settings(&mut self, ux_exterior_flex: &mut Flex, msg_sender: &Sender<String>) {
 		// set up label for this section
-		let ux_level_connection_settings_section_label = Frame::default().with_label("Level Connection Settings");
+		let ux_level_connection_settings_section_label = Frame::default()
+			.with_size(ux_exterior_flex.width(), 50)
+			.with_label("Level Connection Settings");
 		ux_exterior_flex.add(&ux_level_connection_settings_section_label);
+
+
+		let mut ux_level_connection_list: ListBox<i32> = ListBox::new(
+			ux_level_connection_settings_section_label.x(),
+			ux_level_connection_settings_section_label.y() + ux_level_connection_settings_section_label.h(),
+			ux_exterior_flex.width() - 5,
+			ux_exterior_flex.height() - 200,
+			30
+		);
+		// begin debug test value entry
+		ux_level_connection_list.add_element(5);
+		ux_level_connection_list.add_element(69);
+		ux_level_connection_list.add_element(7);
+		ux_level_connection_list.add_element(11);
+		for elem in 0..=10 {
+			ux_level_connection_list.add_element(elem);
+		}
+		ux_level_connection_list.set_label_size(15);
+		// end debug test value entry
+		ux_exterior_flex.add_resizable(ux_level_connection_list.get_scroll_ref());
+		self.ux_stairs_list = ux_level_connection_list;
+
+		let mut ux_level_connection_add_btn = Button::default()
+			.with_size(ux_exterior_flex.width(), 50)
+			.with_label("Add Level Connection");
+		ux_exterior_flex.add(&ux_level_connection_add_btn);
+
+		ux_level_connection_add_btn.set_callback({
+			move |b| {
+				// dialog::choice2(b.x(), b.y(), "txt", "yes", "no", "");
+				// dialog::input(b.x(), b.y(), "Add stairs", "placeholder");
+				dialog::message(b.x(), b.y(), "placeholder, not yet implemented");
+			}//end moving for callback
+		});
+
+		let mut ux_level_connection_edit_btn = Button::default()
+			.with_size(ux_exterior_flex.width(), 50)
+			.with_label("Edit Level Connection");
+		ux_exterior_flex.add(&ux_level_connection_edit_btn);
+
+		ux_level_connection_edit_btn.set_callback({
+			move |b| {
+				dialog::message(b.x(), b.y(), "Placeholder, not yet implemented");
+			}//end moving for callback
+		});
+
+		let mut ux_level_connection_remove_btn = Button::default()
+			.with_size(ux_exterior_flex.width(), 50)
+			.with_label("Remove Level Connection");
+		ux_exterior_flex.add(&ux_level_connection_remove_btn);
+
+		ux_level_connection_remove_btn.emit(msg_sender.clone(), String::from("CaveGen:Stairs:Remove"));
+
+		ux_exterior_flex.fixed(&ux_level_connection_settings_section_label, 50);
+		ux_exterior_flex.fixed(&ux_level_connection_add_btn, 50);
+		ux_exterior_flex.fixed(&ux_level_connection_edit_btn, 50);
+		ux_exterior_flex.fixed(&ux_level_connection_remove_btn, 50);
 	}//end initialize_level_connection_settings(&mut self, ux_exterior_flex)
+
+	pub fn get_cave_gen_stairs_selected(&self) -> Vec<String> {
+		self.ux_stairs_list.get_selected_elements().into_iter().map(|val| format!("{}", val)).collect()
+	}//end get_cave_gen_stairs-selected(self)(
+
+	pub fn remove_cave_gen_stairs_selected(&mut self) {
+		self.ux_stairs_list.remove_selected_elements()
+		// TODO: Also remove the relevant squares
+	}//end remove_cave_gen_stairs_selected(self)
 
 	/// # update_image_size_and_drawing(&mut self)
 	/// This function creates/updates the canvas surface for drawing cave stuff with the right size.  

@@ -1,5 +1,5 @@
 
-use fltk::{app::{self, App, Receiver, Sender}, button::Button, enums::{FrameType, Shortcut}, group::{Group, Tabs}, menu::{self, SysMenuBar}, prelude::{GroupExt, MenuExt, WidgetExt}, window::Window};
+use fltk::{app::{self, App, Receiver, Sender}, button::Button, dialog, enums::{FrameType, Shortcut}, group::{Group, Tabs}, menu::{self, SysMenuBar}, prelude::{GroupExt, MenuExt, WidgetExt}, window::Window};
 
 use crate::squares::SquareGrid;
 
@@ -287,4 +287,27 @@ impl GUI {
 	pub fn get_cave_canvas_ca_settings(&self) -> (usize,usize,usize) {
 		self.ux_cave_gen_tab.get_cave_canvas_ca_settings()
 	}//end get_cave_canvas_ca_settings(self)
+
+	pub fn get_cave_gen_stairs_selected(&self) -> Vec<String> {
+		self.ux_cave_gen_tab.get_cave_gen_stairs_selected()
+	}//end get_cave_gen_stairs_selected(self)
+
+	pub fn remove_cave_gen_stairs_selected(&mut self) {
+		self.ux_cave_gen_tab.remove_cave_gen_stairs_selected()
+	}//end remove_cave_gen_stairs_selected(self)
+
+	/// Displays message to user, asking them yes or no.  
+	/// If user answers yes, then returns true.  
+	/// If user answers no or closes dialog early, returns false.
+	pub fn yes_no(text: &str) -> bool {
+		match dialog::choice2(0, 0, text, "Yes", "No", "") {
+			Some(choice_index) => choice_index == 0,
+			None => false,
+		}//end matching dialog result
+	}//end yes_no(text)
+
+	/// Displays a message box to user.
+	pub fn message(text: &str) {
+		dialog::message(0, 0, text);
+	}//end message(text)
 }//end impl for GUI
