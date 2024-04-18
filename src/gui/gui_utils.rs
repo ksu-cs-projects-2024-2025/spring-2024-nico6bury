@@ -1,4 +1,4 @@
-use fltk::{prelude::{WidgetExt, GroupExt, WidgetBase}, button::Button, group::{Flex, self}, widget_extends, enums::Align, widget::Widget};
+use fltk::{button::Button, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{self, Flex, FlexType, Pack, Scroll}, prelude::{GroupExt, WidgetBase, WidgetExt}, widget::Widget, widget_extends};
 use grid::Grid;
 
 /// # default window width
@@ -115,3 +115,218 @@ impl FlexGrid {
 
 widget_extends!(FlexGrid, Flex, outer_flex);
 
+pub struct ListBox<T > where T : std::fmt::Display {
+	pack: Pack,
+	scroll: Scroll,
+	// outer_widget: Flex,
+	elements: Vec<ListItem<T>>,
+	element_height: usize,
+}//end struct ListBox
+
+impl<T: std::fmt::Display> ListBox<T> {
+	/// Creates a new ListBox with the given size.
+	pub fn new(x: i32, y: i32, width: i32, height: i32, element_height: usize) -> ListBox<T> {
+		// create the pieces with the desired size and fit them together
+		// let mut temp_scroll_flex = Flex::default()
+		// 	.with_type(FlexType::Row)
+		// 	.with_size(width, height)
+		// 	.with_pos(x, y);
+		// temp_scroll_flex.end();
+		// temp_scroll_flex.set_color(Color::Magenta);
+		
+		let mut temp_scroll = Scroll::new(x,y,width,height, None);
+		temp_scroll.end();
+		// temp_scroll_flex.add(&temp_scroll);
+
+		// let mut temp_pack_flex = Flex::default()
+		// 	.with_type(FlexType::Column)
+		// 	.with_size(width - 15, height - 15)
+		// 	.with_pos(x, y);
+		// temp_pack_flex.end();
+		// temp_scroll.add(&temp_pack_flex);
+		// temp_pack_flex.set_frame(FrameType::GtkRoundUpFrame);
+
+		let temp_pack = Pack::new(x,y,width, height, None);
+		temp_pack.end();
+		temp_scroll.add(&temp_pack);
+		// temp_pack_flex.add(&temp_pack);
+		let temp_elements = Vec::new();
+
+		// set scroll children to resize when it does, partially
+		temp_scroll.handle(move |scroll, ev| {
+			match ev {
+				/*
+				Resize is done on Push to enable tracking for Enter.
+				Resize is done on Enter in order to compensate for Event::Resize not
+				being triggered during some tile resizings.
+				 */
+				Event::Resize | Event::Fullscreen | Event::Push | Event::Enter | Event::Leave => {
+					for child_index in 0..scroll.children() {
+						if let Some(mut child) = scroll.child(child_index) {
+							child.set_size(scroll.width() - 15, child.height());
+							child.redraw();
+							// println!("{:?}", ev);
+						}//end if we got the child from scroll
+					}//end looping over child indices
+					scroll.redraw();
+					true
+				},
+				_ => false,
+			}//end matching event
+		});
+
+		ListBox {
+			pack: temp_pack,
+			scroll: temp_scroll,
+			elements: temp_elements,
+			element_height,
+			// outer_widget: temp_scroll_flex,
+		}//end struct construction
+	}//end new
+
+	/// Clears all elements from the list.
+	pub fn clear_elements(&mut self) {
+		self.elements.clear();
+		self.pack.clear();
+		self.pack.redraw();
+		self.scroll.redraw();
+	}//end clear_elements()
+
+	/// Sets the height of each elment of the list.
+	pub fn set_element_height(&mut self, element_height: usize) {
+		self.element_height = element_height;
+		let ieh = u_to_i(&element_height);
+		for element in &mut self.elements {
+			element.set_size(element.w(), ieh);
+			element.redraw();
+		}//end resizing each element
+		self.pack.redraw();
+		self.scroll.redraw();
+	}//end set_element_height(self, element_height)
+
+	/// Replaces the current list of elements
+	pub fn set_elements(&mut self, option_list: Vec<T>) {
+		// create the new list of elements
+		let mut temp_elements = Vec::new();
+		let ieh = u_to_i(&self.element_height);
+		for val in option_list {
+			let temp_list_item = ListItem::new(50, self.element_height, val);
+			temp_elements.push(temp_list_item);
+		}//end creating Frame from each String
+		// replace the current list of elements in widget
+		self.pack.clear();
+		self.elements = temp_elements;
+		for element in &self.elements {
+			self.pack.add(element.get_frame_ref());
+		}//end adding each element to the pack
+		let new_height_u = self.elements.len() * self.element_height;
+		let new_height_i = u_to_i(&new_height_u);
+		self.pack.set_size(self.pack.width(), new_height_i);
+		self.pack.redraw();
+	}//end set_elements
+
+	pub fn set_label_size(&mut self, label_size: i32) {
+		for element in &mut self.elements {
+			element.set_label_size(label_size);
+		}//end changing label size of each element
+	}//end set_label_size(self, label_size)
+
+	pub fn add_element(&mut self, new_element: T) {
+		let new_list_item = ListItem::new(i_to_u(&self.pack.w()), self.element_height, new_element);
+		self.pack.add(&new_list_item.frame);
+		self.elements.push(new_list_item);
+		self.pack.redraw();
+	}//end add_element(self, new_element)
+
+	pub fn get_scroll_ref(&self) -> &Scroll { &self.scroll }
+	pub fn get_scroll_ref_mut(&mut self) -> &mut Scroll { &mut self.scroll }
+}//end impl for ListBox
+
+pub struct ListItem<T > where T: std::fmt::Display {
+	val: T,
+	frame: Button,
+}//end struct ListItem
+
+impl<T: std::fmt::Display> ListItem<T> {
+	pub fn new(w: usize, h: usize, val: T) -> ListItem<T> {
+		let wi = u_to_i(&w);
+		let hi = u_to_i(&h);
+		let mut temp_frame = Button::default()
+			.with_size(wi,hi)
+			.with_label(&format!("{}", val));
+		temp_frame.set_color(Color::Inactive);
+		temp_frame.set_label_color(Color::White);
+		temp_frame.set_frame(FrameType::FlatBox);
+
+		temp_frame.handle({
+			move |frame, ev| {
+				match ev {
+					Event::Push  => {
+						let cur_color = frame.color();
+						match cur_color {
+							Color::Inactive => frame.set_color(Color::Selection),
+							Color::Selection => frame.set_color(Color::Inactive),
+							_ => frame.set_color(Color::Inactive),
+						}
+						true
+					},
+					_ => false,
+				}
+			}//end move for handling event
+		});
+
+		ListItem {
+			val,
+			frame: temp_frame,
+		}//end struct construction
+	}//end new()
+
+	/// Changes the value stored in this ListItem.
+	pub fn set_val(&mut self, new_val: T) {
+		self.val = new_val;
+		self.frame.set_label(&format!("{}", self.val));
+		self.frame.redraw_label();
+	}//end set_val()
+
+	/// Redraws a widget, necessary for resizing and changing positions.
+	pub fn redraw(&mut self) { self.frame.redraw(); }
+	/// Sets to dimensions width and height.
+	pub fn set_size(&mut self, w: i32, h: i32) {
+		self.frame.set_size(w, h);
+	}//end set_size(self, w, h)
+	pub fn x(&self) -> i32 { self.frame.x() }
+	pub fn y(&self) -> i32 { self.frame.y() }
+	pub fn w(&self) -> i32 { self.frame.w() }
+	pub fn h(&self) -> i32 { self.frame.h() }
+
+	pub fn set_label_size(&mut self, label_size: i32) { self.frame.set_label_size(label_size); self.frame.redraw_label(); }
+
+	/// Gets reference to current value stored in ListItem.
+	pub fn get_val(&self) -> &T { &self.val }
+	/// Gets reference to frame of this ListItem.
+	pub fn get_frame_ref(&self) -> &Button { &self.frame }
+	/// Gets mutable reference to frame of this ListItem.  
+	/// Be careful not to change the label using this function, or things
+	/// will be weird.
+	pub fn get_frame_ref_mut(&mut self) -> &mut Button { &mut self.frame }
+}//end impl for ListItem
+
+/// Rounds a usize into an i32. If we can't convert,
+	/// returns i32::MAX.
+	#[allow(dead_code)]
+	fn u_to_i(unsi: &usize) -> i32 {
+		match i32::try_from(*unsi) {
+			Ok(int) => int,
+			Err(_) => i32::MAX,
+		}//end matching cast result
+	}//end u_to_i
+
+	/// Rounds an int to a usize. If we can't convert,
+	/// returns 0.
+	#[allow(dead_code)]
+	fn i_to_u(int: &i32) -> usize {
+		match usize::try_from(*int) {
+			Ok(u) => u,
+			Err(_) => 0,
+		}//end matching result of cast
+	}//end i_to_u
