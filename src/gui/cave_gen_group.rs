@@ -593,6 +593,9 @@ impl CaveGenGroup {
 
 	/// # update_image_size_and_drawing(&mut self)
 	/// This function creates/updates the canvas surface for drawing cave stuff with the right size.  
+	/// Note: Code for drawing things on the canvas is heavily adapted from the FLTK paint example that is
+	/// part of the fltk-rs repo. My implementation is heavily adapted, but that was my reference point for
+	/// figuring out how the handle and draw function are generally supposed to work.
 	fn update_image_size_and_drawing(&mut self) {
 		let canvas_surface = ImageSurface::new(self.ux_cave_canvas_frame.width(), self.ux_cave_canvas_frame.height(), false);
 		

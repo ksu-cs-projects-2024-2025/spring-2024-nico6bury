@@ -23,6 +23,8 @@ fn get_max_grid_button_height() -> i32 {15}
 /// # FlexGrid
 /// 
 /// This struct is meant to be a sort of wrapper around a bunch of buttons and nested flexes in order to mimic a grid of buttons.
+/// Note: The code for the FlexGrid custom widget is something I developed in my simple city generator project for CIS536.
+/// All the code is written by me.
 pub struct FlexGrid {
 	/// # outer_flex
 	/// The flex containing the flex containing the buttons
@@ -112,3 +114,4 @@ impl FlexGrid {
 }//end impl for FlexGrid
 
 widget_extends!(FlexGrid, Flex, outer_flex);
+
