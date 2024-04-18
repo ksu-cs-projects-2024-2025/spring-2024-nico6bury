@@ -238,6 +238,40 @@ impl<T: std::fmt::Display> ListBox<T> {
 		self.pack.redraw();
 	}//end add_element(self, new_element)
 
+	/// Gets vector with references to vals
+	pub fn get_elements(&self) -> Vec<&T> {
+		let mut temp_vec = Vec::new();
+		for elem in &self.elements {
+			temp_vec.push(elem.get_val());
+		}//end taking from each list item
+		temp_vec
+	}//end get_elements
+
+	pub fn get_selected_elements(&self) -> Vec<&T> {
+		let mut temp_vec = Vec::new();
+		for elem in &self.elements {
+			if elem.is_selected() {
+				temp_vec.push(elem.get_val());
+			}//end if this element is selected
+		}//end looping over elements
+		temp_vec
+	}//end get_selected_elements
+	
+	pub fn get_non_selected_elements(&self) -> Vec<&T> {
+		let mut temp_vec = Vec::new();
+		for elem in &self.elements {
+			if !elem.is_selected() {
+				temp_vec.push(elem.get_val());
+			}//end if element is not selected
+		}//end looping over elements
+		temp_vec
+	}//end get_non_selected_elements
+
+	pub fn remove_selected_elements(&mut self) where T: Clone {
+		let non_selected_elements: Vec<T> = self.get_non_selected_elements().into_iter().cloned().collect();
+		self.set_elements(non_selected_elements);
+	}//end remove_selected_elements()
+
 	pub fn get_scroll_ref(&self) -> &Scroll { &self.scroll }
 	pub fn get_scroll_ref_mut(&mut self) -> &mut Scroll { &mut self.scroll }
 }//end impl for ListBox
@@ -309,6 +343,9 @@ impl<T: std::fmt::Display> ListItem<T> {
 	/// Be careful not to change the label using this function, or things
 	/// will be weird.
 	pub fn get_frame_ref_mut(&mut self) -> &mut Button { &mut self.frame }
+	/// Returns true if frame color is equal to Color::Selection, false otherwise.  
+	/// If should be noted that frame color is toggled between Color::Selection and Color::Inactive when frame is clicked.
+	pub fn is_selected(&self) -> bool { self.frame.color() == Color::Selection }
 }//end impl for ListItem
 
 /// Rounds a usize into an i32. If we can't convert,
