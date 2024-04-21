@@ -270,7 +270,7 @@ impl GUI {
 	/// Format of vec is x,y coord of upper left of each square, plus color for that square in RGB.  
 	/// It should be noted that squares might overlap.
 	pub fn get_cave_canvas_squareularization(&mut self) -> Option<SquareGrid> {
-		self.ux_cave_gen_tab.get_squareularization()
+		self.ux_cave_gen_tab.get_last_squareularization()
 	}//end get_cave_canvas_squareularization()
 
 	/// Sets the canvas stuff in cave canvas based on [square_info].  
