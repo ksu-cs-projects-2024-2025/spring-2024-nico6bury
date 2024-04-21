@@ -40,25 +40,28 @@ impl CA {
 	/// Counts the number of neighbors with target CA Color/Classification.  
 	/// It might be noted that this count does not include the value at [row], [col].  
 	/// - If bounds row/column's neighborhood is partially cut off by bounds, 
-	/// then count will be a bit lower. In cases of something going wrong 
+	/// then count will be a bit higher. In cases of something going wrong 
 	/// despite bounds checking, a message might be println!()-ed, but 
 	/// the function shouldn't panic or return None.  
-	/// - The function should only return None if self.squares is None.
+	/// - The function should only return None if self.squares is None.  
+	/// - Since it is assumed that this function will be called with target == CAC::Wall,  
+	/// it is set up so that outermost cells are likely to stay walls.
 	fn neighbor_count(&self, row: usize, col: usize, target: CAC) -> Option<usize> {
 		match &self.squares {
 			Some(squares) => {
 				let mut target_count = 0;
 		
 				// get bounds for valid row and cols, doing bounds checking
+				// squares out of bounds are counted as targets
 				let low_row: usize;
-				if row < self.neighborhood_size { low_row = 0; } else { low_row = row - self.neighborhood_size; }
+				if row < self.neighborhood_size { low_row = 0; target_count += 1; } else { low_row = row - self.neighborhood_size; }
 				let low_col: usize;
-				if col < self.neighborhood_size { low_col = 0; } else { low_col = col - self.neighborhood_size; }
+				if col < self.neighborhood_size { low_col = 0; target_count += 1; } else { low_col = col - self.neighborhood_size; }
 				let hih_row: usize;
-				if row + self.neighborhood_size > *squares.rows() - 1 { hih_row = *squares.rows() - 1; }
+				if row + self.neighborhood_size > *squares.rows() - 1 { hih_row = *squares.rows() - 1; target_count += 1; }
 				else { hih_row = row + self.neighborhood_size; }
 				let hih_col: usize;// = col + self.neighborhood_size;
-				if col + self.neighborhood_size > *squares.cols() - 1 { hih_col = *squares.cols() - 1; }
+				if col + self.neighborhood_size > *squares.cols() - 1 { hih_col = *squares.cols() - 1; target_count += 1; }
 				else { hih_col = col + self.neighborhood_size; }
 
 				// Count number of neighbors which CAC::classify(color) == target
