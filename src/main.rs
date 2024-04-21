@@ -1,4 +1,3 @@
-use std::{thread, time::Duration};
 
 use gui::GUI;
 
