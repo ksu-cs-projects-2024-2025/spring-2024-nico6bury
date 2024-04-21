@@ -734,7 +734,8 @@ impl CaveGenGroup {
 						let coords = app::event_coords();
 						x = coords.0; // fefwf
 						y = coords.1;
-						draw_point(x, y);
+						draw_point(x - f.x(), y - f.y());
+						set_line_style(LineStyle::Solid, 0);
 						ImageSurface::pop_current();
 						f.redraw();
 						true
@@ -747,6 +748,7 @@ impl CaveGenGroup {
 						draw_line(x - f.x(), y - f.y(), coords.0 - f.x(), coords.1 - f.y());
 						x = coords.0;
 						y = coords.1;
+						set_line_style(LineStyle::Solid, 0);
 						ImageSurface::pop_current();
 						f.redraw();
 						true
@@ -966,10 +968,16 @@ impl CaveGenGroup {
 	/// Helper function for ux_squareularize_canvas
 	/// Determines a dominant color in each square, recording
 	/// this information in squares. 
+	/// ## Bias:
+	/// This function has a bias towards certain colors and will count them as being
+	/// x10 more dominant. Colors meaningful to CA are given bias. Colors close to CA colors
+	/// will be converted.  
+	/// Stairs a given a large bias due to conversion strength of wall and floor.
 	/// ## Panics:
 	/// - If this function panics, it is mostly likely a result of
 	/// the bounds of a square exceeding image bounds, causing the
-	/// function to attempt accessing a pixel that doesn't exist.
+	/// function to attempt accessing a pixel that doesn't exist.  
+	/// This should not happen when using SquareGrids though.
 	fn squareularization_get_dominant_color(squares: &mut SquareGrid, pixels: &Vec<(u8,u8,u8)> ,img_width: &usize, square_width: &usize, square_height: &usize) {
 		/*
 		square.0 refers to square width, square.1 refers to square height
@@ -983,7 +991,18 @@ impl CaveGenGroup {
 				for x in *square.x()..(square_width + square.x()) {
 					let this_overall_index = (y * img_width) + x;
 					let this_rgb = pixels[this_overall_index];
-					let this_color = (this_rgb.0, this_rgb.1, this_rgb.2);
+					let mut this_color = (this_rgb.0, this_rgb.1, this_rgb.2);
+					
+					if CAC::classify(this_rgb) == CAC::Other {
+						let brightness = (this_rgb.0 as f32 + this_rgb.1 as f32 + this_rgb.2 as f32) / 3.0;
+						let floor_dist = 255.0 - brightness;
+						let wall_dist = brightness;
+						let stairs_dist = (this_rgb.0 as f32 + (255 - this_rgb.1) as f32 + this_rgb.2 as f32) / 3.0;
+						if floor_dist < 30.0 && floor_dist < wall_dist && floor_dist < stairs_dist { this_color = (255,255,255); }
+						else if wall_dist < 30.0 && wall_dist < floor_dist && wall_dist < stairs_dist { this_color = (0,0,0); }
+						else if stairs_dist < 30.0 && stairs_dist < floor_dist && stairs_dist < wall_dist { this_color = (0,255,0); }
+					}//end if we have a non-CA color here
+
 					if let Some(color_index) = color_counts_color.iter().position(|&c| c == this_color) {
 						color_counts_count[color_index] += 1;
 					} else {
@@ -992,6 +1011,15 @@ impl CaveGenGroup {
 					}//end else we need to add new entry to color counts
 				}//end looping over all x values within square
 			}//end looping over all y values within square
+
+			// bias for CA colors
+			for (i, color) in color_counts_color.iter().enumerate() {
+				match CAC::classify(*color) {
+					CAC::Floor | CAC::Wall => color_counts_count[i] *= 10,
+					CAC::Stairs => color_counts_count[i] *= 500,
+					_ => {},
+				}//end matching bias to colors
+			}//end applying bias to color counts
 
 			// check to see which color has the highest count
 			// TODO: Prefer [0,0,0] [255,255,255] [0,255,0] [255,0,0] [0,0,255]
