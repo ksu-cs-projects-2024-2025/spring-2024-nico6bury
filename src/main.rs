@@ -1,3 +1,5 @@
+use std::{thread, time::Duration};
+
 use gui::GUI;
 
 use crate::cellular_automata::CA;
@@ -36,15 +38,21 @@ fn main() {
                             // TODO: Run those squares through the CA
                             let mut ca_runner = CA::new(ca_info.0, ca_info.1).with_squares(squares);
 
-                            for _ in 0..ca_info.2 { ca_runner.run_generation(); }
+                            for _ in 0..ca_info.2 {
+                                ca_runner.run_generation();
+                                match ca_runner.get_squares() {
+                                    Some(changed_squares) => {
+                                        // return out squares back to gui
+                                        gui.set_cave_canvas_squareularization(changed_squares);
+                                        
+                                        // TODO: Find a way to make gui update on each generation
 
-                            match ca_runner.get_squares() {
-                                Some(changed_squares) => {
-                                    // return out squares back to gui
-                                    gui.set_cave_canvas_squareularization(changed_squares);
-                                    println!("Finished CA generations and sent those squareularizations back to the GUI to display.");
-                                }, None => println!("CA Gen Failed or couldn't get squares."),
-                            }//end matching based on squares
+                                        println!("Finished CA generation {} and sent squareularization back to the GUI to display.", ca_runner.generations_so_far());
+                                    }, None => println!("CA Gen Failed or couldn't get squares."),
+                                }//end matching based on squares
+
+                            }//end running for each generation
+
                         },
                         None => {println!("Couldn't get square info from cave gen canvas. We can't start doing CA like this.");}
                     };
