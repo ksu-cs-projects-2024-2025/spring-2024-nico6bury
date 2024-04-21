@@ -252,7 +252,7 @@ impl CaveGenGroup {
 			.with_size(50, 25)
 			.with_label("Width")
 			.with_align(Align::Top);
-		self.ux_squares_width_counter.set_value(50.0);
+		self.ux_squares_width_counter.set_value(100.0);
 		self.ux_squares_width_counter.set_minimum(3.0);
 		self.ux_squares_width_counter.set_maximum(1000.0);
 		self.ux_squares_width_counter.set_precision(0);
@@ -264,7 +264,7 @@ impl CaveGenGroup {
 			.with_size(50, 25)
 			.with_label("Height")
 			.with_align(Align::Top);
-		self.ux_squares_height_counter.set_value(50.0);
+		self.ux_squares_height_counter.set_value(100.0);
 		self.ux_squares_height_counter.set_minimum(3.0);
 		self.ux_squares_height_counter.set_maximum(1000.0);
 		self.ux_squares_height_counter.set_precision(0);
@@ -282,7 +282,7 @@ impl CaveGenGroup {
 			.with_pos(ux_squares_pixel_diameter_label.x(), ux_squares_pixel_diameter_label.y() + ux_squares_pixel_diameter_label.height())
 			.with_size(50, 25)
 			.with_align(Align::TopLeft);
-		self.ux_squares_pixel_diameter_counter.set_value(8.0);
+		self.ux_squares_pixel_diameter_counter.set_value(4.0);
 		self.ux_squares_pixel_diameter_counter.set_minimum(1.0);
 		self.ux_squares_pixel_diameter_counter.set_maximum(30.0);
 		self.ux_squares_pixel_diameter_counter.set_precision(0);
@@ -335,16 +335,16 @@ impl CaveGenGroup {
 		let mut ux_wall_activation_frame = Frame::default()
 			.with_pos(ux_interior_flex_1.x(), ux_interior_flex_1.y())
 			.with_size(ux_interior_flex_1.width() / 3, ux_interior_flex_1.height())
-			.with_label("Activated");
-		ux_wall_activation_frame.set_color(Color::DarkGreen);
+			.with_label("Disabled");
+		ux_wall_activation_frame.set_color(Color::Red);
 		ux_wall_activation_frame.set_frame(FrameType::FlatBox);
 		ux_interior_flex_1.add(&ux_wall_activation_frame);
 
 		let mut ux_floor_activation_frame = Frame::default()
 			.with_pos(ux_wall_activation_frame.x() + ux_wall_activation_frame.width(), ux_interior_flex_1.y())
 			.with_size(ux_interior_flex_1.width() / 3, ux_interior_flex_1.height())
-			.with_label("Disabled");
-		ux_floor_activation_frame.set_color(Color::Red);
+			.with_label("Activated");
+		ux_floor_activation_frame.set_color(Color::DarkGreen);
 		ux_floor_activation_frame.set_frame(FrameType::FlatBox);
 		ux_interior_flex_1.add(&ux_floor_activation_frame);
 
@@ -380,7 +380,7 @@ impl CaveGenGroup {
 		ux_draw_stairs_btn.set_color(Color::Green);
 		ux_interior_flex_2.add(&ux_draw_stairs_btn);
 
-		// set up controls for choosing 
+		// set up controls for choosing brush size
 		let ux_brush_size_label = Frame::default()
 			.with_pos(ux_interior_flex_2.x(), ux_interior_flex_2.y() + ux_interior_flex_2.height())
 			.with_size(ux_exterior_flex.width(), ux_exterior_flex.height() / 4)
@@ -391,7 +391,7 @@ impl CaveGenGroup {
 		let mut ux_brush_size_counter = Counter::default()
 			.with_pos(ux_brush_size_label.x(), ux_brush_size_label.y() + ux_brush_size_label.height())
 			.with_size(ux_exterior_flex.width(), ux_exterior_flex.height()  / 4);
-		ux_brush_size_counter.set_value(1.0);
+		ux_brush_size_counter.set_value(2.0);
 		ux_brush_size_counter.set_minimum(1.0);
 		ux_brush_size_counter.set_maximum(20.0);
 		ux_brush_size_counter.set_precision(0);
@@ -419,7 +419,7 @@ impl CaveGenGroup {
 		});
 
 		// update state of draw_state
-		self.ux_cave_canvas_draw_state = Rc::from(RefCell::from(DrawState::Wall));
+		self.ux_cave_canvas_draw_state = Rc::from(RefCell::from(DrawState::Floor));
 
 		// set handlers for all the buttons
 		let wall_frame_ref = Rc::from(RefCell::from(ux_wall_activation_frame));
@@ -554,7 +554,7 @@ impl CaveGenGroup {
 		ux_interior_flex_3.add(&ux_iterations_label);
 
 		let mut ux_iterations_counter = Counter::default();
-		ux_iterations_counter.set_value(1.0);
+		ux_iterations_counter.set_value(2.0);
 		ux_iterations_counter.set_bounds(1.0, 100.0);
 		ux_iterations_counter.set_precision(0);
 		ux_iterations_counter.set_step(1.0, 5);
