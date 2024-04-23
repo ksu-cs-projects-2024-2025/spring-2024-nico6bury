@@ -998,9 +998,9 @@ impl CaveGenGroup {
 						let floor_dist = 255.0 - brightness;
 						let wall_dist = brightness;
 						let stairs_dist = (this_rgb.0 as f32 + (255 - this_rgb.1) as f32 + this_rgb.2 as f32) / 3.0;
-						if floor_dist < 30.0 && floor_dist < wall_dist && floor_dist < stairs_dist { this_color = (255,255,255); }
-						else if wall_dist < 30.0 && wall_dist < floor_dist && wall_dist < stairs_dist { this_color = (0,0,0); }
-						else if stairs_dist < 30.0 && stairs_dist < floor_dist && stairs_dist < wall_dist { this_color = (0,255,0); }
+						if floor_dist < 150.0 && floor_dist < wall_dist && floor_dist < stairs_dist { this_color = (255,255,255); }
+						else if wall_dist < 150.0 && wall_dist < floor_dist && wall_dist < stairs_dist { this_color = (0,0,0); }
+						else if stairs_dist < 70.0 && stairs_dist < floor_dist && stairs_dist < wall_dist { this_color = (0,255,0); }
 					}//end if we have a non-CA color here
 
 					if let Some(color_index) = color_counts_color.iter().position(|&c| c == this_color) {
