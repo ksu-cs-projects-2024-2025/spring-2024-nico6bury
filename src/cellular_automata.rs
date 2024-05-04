@@ -160,4 +160,12 @@ impl CAC {
 			CAC::Other => (50,50,50),
 		}//end matching CAC to color
 	}//end color()
+
+	pub fn colors_vec() -> Vec<(u8,u8,u8)> {
+		let mut color_vec = Vec::new();
+		color_vec.push((0,0,0));
+		color_vec.push((255,255,255));
+		color_vec.push((0,255,0));
+		color_vec
+	}
 }//end impl for CAC

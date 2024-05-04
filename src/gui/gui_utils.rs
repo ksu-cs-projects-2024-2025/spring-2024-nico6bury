@@ -1,7 +1,9 @@
-use fltk::{button::Button, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{self, Flex, FlexType, Pack, Scroll}, prelude::{GroupExt, WidgetBase, WidgetExt}, widget::Widget, widget_extends};
+use std::slice::Iter;
+
+use fltk::{button::Button, draw::draw_rect_fill, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{self, Flex, FlexType, Pack, Scroll}, prelude::{GroupExt, ImageExt, SurfaceDevice, WidgetBase, WidgetExt}, surface::ImageSurface, widget::Widget, widget_extends};
 use grid::Grid;
 
-use crate::squares::Square;
+use crate::squares::{Square, SquareGrid};
 
 /// # default window width
 /// gives the default width in pixels of the main window
@@ -388,3 +390,241 @@ impl std::fmt::Display for SquareStairDisplay {
 		write!(f, "Row: {}, Col: {}", self.row_idx, self.col_idx)
 	}//end fmt
 }//end impl Display for SquareStairDisplay
+
+	/// This function takes a mutable reference to an image surface and performs operations on it
+	/// to squareularize it.  
+	/// This function will return false if some part of this process is unsuccessful, or true if things went okay.  
+	/// It is recommended to call redraw() on the frame holding [canvas] after calling this method.
+	/// Arguments:  
+	/// - canvas - the image surface you want to squareularize
+	/// - preferred_colors - an optional list of colors to be preferred above others when determining colors
+	/// - pixel_scale - how many pixels are in one grid square
+	/// - sub_pixel_scale - scale of sub-grid within each grid square
+	pub fn ux_squareularize_canvas(canvas: &ImageSurface, preferred_colors: Option<&Vec<(u8,u8,u8)>>, pixel_scale: &usize, sub_pixel_scale: &usize) -> Option<SquareGrid> {
+		match squareularization_get_rgb_pixels(canvas) {
+			Some(image_and_pixels) => {
+				let image = image_and_pixels.0;
+				let pixels = image_and_pixels.1;
+				let img_width = image.width() as usize;
+				let img_height = image.height() as usize;
+
+
+				// figure out list of bounds for squares in our grid
+				let square_scale = (pixel_scale * sub_pixel_scale) as usize;
+				let square_width = square_scale;//img_width / square_scale;
+				let square_height = square_scale;//img_height / square_scale;
+				// format of (x, y, Color), assume square_width and square_height, fill in color later
+				match squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height) {
+					Some(mut squares) => {
+						// figure out dominant color in each square, replacing color value in vec
+						squareularization_get_dominant_color(&mut squares, preferred_colors, &pixels, &img_width, &square_width, &square_height);
+		
+						// paint dominant color to entire square using the canvas
+						squareularization_color_squares(canvas, &squares, &true);
+		
+						Some(squares)
+					},
+					None => {
+						println!("Couldn't split img to squares. It is likely that a SquareGrid could not be created from Square Vec.");
+						None
+					}
+				}
+			},
+			None => {println!("Squareularization Failed. Couldn't get image from canvas, or pixels weren't in RGB color depth 3."); None },
+		}//end matching image get result
+	}//end ux_squareularize_canvas(canvas)
+
+	/// Helper function for ux_squareularize_canvas
+	/// 
+	/// This function assumes that canvas contains an RGB image.  
+	/// It returns None if:  
+	/// - we can't get an image from canvas
+	/// - the image we get isn't an RGB image with color depth 3
+	/// It returns Some with a tuple containing:
+	/// - the image grabbed from canvas
+	/// - a Vector containing the RGB value of each pixel
+	pub fn squareularization_get_rgb_pixels(canvas: &ImageSurface) -> Option<(fltk::image::RgbImage, Vec<(u8,u8,u8)>)> {
+		if let Some(cur_img) = canvas.image() {
+			match cur_img.depth() {
+				fltk::enums::ColorDepth::Rgb8 => {
+					let raw_pixel_data = cur_img.to_rgb_data();
+
+					// convert our pixel R,G,B,R,G,B into RGB,RGB
+					let mut rgb_pixel_vec = Vec::new();
+					let mut rgb_trio = Vec::new();
+					for val in raw_pixel_data {
+						rgb_trio.push(val);
+						if rgb_trio.len() >= 3 {
+							let r = rgb_trio[0];
+							let g = rgb_trio[1];
+							let b = rgb_trio[2];
+							rgb_pixel_vec.push((r,g,b));
+							rgb_trio.clear();
+						}//end if we're ready to push
+					}//end packing raw pixel data into rgb data
+
+					Some((cur_img, rgb_pixel_vec))
+				},
+				_ => return None,
+			}//end matching to correct color depths
+		} else {return None;}
+	}//end squareularization_get_rgb_pixels(canvas)
+
+	/// Helper function for ux_squareularize_canvas()
+	/// - This function, given the dimensions of a larger image and smaller square within that image, 
+	/// splits up the image into squares of roughly the dimensions provided.  
+	/// - This is returned as a vector containing the x and y coordinate of the 
+	/// upper left corner of each square.  
+	/// Each element also has a tuple with an rgb value,
+	/// to be used in later processing.
+	/// - There are cases when the image cannot be split evenly into squares of the same size.
+	/// In such a case, the squares along the bottom or right edge of the image will overlap slightly.
+	pub fn squareularization_split_img_to_squares(img_width: &usize, img_height: &usize, square_width: &usize, square_height: &usize) -> Option<SquareGrid> {
+		let mut squares: Vec<Square> = Vec::new();
+		// format of (x, y, Color), assume square_width and square_height, fill in color later
+		for mut x in (0..*img_width).step_by(*square_width) {
+			// Squares at edges might overlap, but they won't be out of bounds
+			if x + square_width > *img_width {x = img_width - square_width;}
+			for mut y in (0..*img_height).step_by(*square_height) {
+				// Squares at edges might overlap, but they won't be out of bounds
+				if y + square_height > *img_height {y = img_height - square_height;}
+				let square = Square::new(x,y, *square_width, *square_height);
+				squares.push(square);
+			}//end looping over all potential y values for sub-squares
+		}//end looping over all potential x values for sub-squares
+		match SquareGrid::from_squares(squares, *img_width, *img_height) {
+			Ok(square_grid) => {
+				Some(square_grid)
+			},
+			Err(err_info) => {
+				println!("Recieved an error when converting squares to SquareGrid. Printing it below:");
+				println!("{}", err_info.1);
+				None
+			}}
+	}//end squareularization_split_img_to_squares
+
+	/// Helper function for ux_squareularize_canvas
+	/// Determines a dominant color in each square, recording
+	/// this information in squares. 
+	/// ## Bias:
+	/// This function has a bias towards certain colors and will count them as being
+	/// x10 more dominant. Colors meaningful to CA are given bias. Colors close to CA colors
+	/// will be converted.  
+	/// Stairs a given a large bias due to conversion strength of wall and floor.
+	/// ## Panics:
+	/// - If this function panics, it is mostly likely a result of
+	/// the bounds of a square exceeding image bounds, causing the
+	/// function to attempt accessing a pixel that doesn't exist.  
+	/// This should not happen when using SquareGrids though.
+	pub fn squareularization_get_dominant_color(squares: &mut SquareGrid, preferred_colors: Option<&Vec<(u8,u8,u8)>>, pixels: &Vec<(u8,u8,u8)> ,img_width: &usize, square_width: &usize, square_height: &usize) {
+		/*
+		square.0 refers to square width, square.1 refers to square height
+		 */
+		for square in squares.iter_mut() {
+			// figure out dominant color here, set square.2 to that
+			// color_counts1 and color_counts2 are parallel
+			let mut color_counts_color: Vec<(u8,u8,u8)> = Vec::new();
+			let mut color_counts_count: Vec<u64> = Vec::new();
+			for y in *square.y()..(square_height + square.y()) {
+				for x in *square.x()..(square_width + square.x()) {
+					let this_overall_index = (y * img_width) + x;
+					let this_rgb = pixels[this_overall_index];
+					let mut this_color = (this_rgb.0, this_rgb.1, this_rgb.2);
+					
+					if let Some(pcs) = preferred_colors {
+						if !pcs.contains(&this_rgb) {
+							let pcs_dists = {
+								let mut tmp_dif_vec = Vec::new();
+								for color in pcs {
+									let r_diff = this_rgb.0 - color.0;
+									let g_diff = this_rgb.1 - color.1;
+									let b_diff = this_rgb.2 - color.2;
+									let t_diff = (r_diff as f32 + g_diff as f32 + b_diff as f32) / 3.;
+									tmp_dif_vec.push(t_diff);
+								}//end getting total average difference to each color
+								tmp_dif_vec
+							};
+							let mut closest = (0, 1000.);
+							for (idx, pcs_dist) in pcs_dists.iter().enumerate() {
+								if *pcs_dist < closest.1 {
+									closest = (idx, *pcs_dist);
+								}//end if we have a better closest value
+							}//end finding closest of preferred colors
+							if let Some(color) = pcs.get(closest.0) { this_color = *color; }
+						}//end if this color is not preferred
+					}//end if we're applying a bias
+
+					if let Some(color_index) = color_counts_color.iter().position(|&c| c == this_color) {
+						color_counts_count[color_index] += 1;
+					} else {
+						color_counts_color.push(this_color);
+						color_counts_count.push(1);
+					}//end else we need to add new entry to color counts
+				}//end looping over all x values within square
+			}//end looping over all y values within square
+
+			// bias for CA colors
+			for (i, color) in color_counts_color.iter().enumerate() {
+				match *color {
+					(0,255,0) => color_counts_count[i] *= 500,
+					_ => {},
+				}//end matching bias to colors
+			}//end applying bias to color counts
+
+			// check to see which color has the highest count
+			// TODO: Prefer [0,0,0] [255,255,255] [0,255,0] [255,0,0] [0,0,255]
+			let mut running_most = ((40,40,40), 0);
+			for (i, count) in color_counts_count.iter().enumerate() {
+				if *count > running_most.1 { running_most = (color_counts_color[i], color_counts_count[i]); }
+			}//end getting the color that's most common from color counts
+			square.set_color(running_most.0);
+		}//end figuring out which color is dominant
+	}//end squareularization_get_dominant_color()
+
+	/// Helper function for [ux_squareularize_canvas()]
+	/// - This function, given an ImageSurface and Vec of squares 
+	/// within that image, paints the color within the squares 
+	/// vec to that square.  
+	/// - If [use_debug_color] is true, then the whole [canvas] will be 
+	/// painted magenta before painting anything, in order to 
+	/// visually show if any space was missed.
+	/// - Because this function accesses fltk drawing functions and
+	/// must do type conversions, there are a few potential panics
+	/// that could happen.
+	/// - It is recommended to call [redraw()] on the frame holding 
+	/// canvas after calling this function.
+	/// ## Panics:
+	/// - type conversion of [square_width] or [square_height] to i32
+	/// - type conversion of [squares]\[i\].0 or [squares]\[i\].1 to i32
+	/// - debug drawing tries to calculate image dimensions by 
+	/// getting the last element of [squares] and adding [square_width] 
+	/// and [square_height] appropriately. If squares cannot 
+	/// be accessed, the type conversion to i32 fails, or 
+	/// the dimensions calculated exceed the image bounds, a 
+	/// panic might happen.
+	pub fn squareularization_color_squares(canvas: &ImageSurface, squares: &SquareGrid, use_debug_color: &bool) {
+		ImageSurface::push_current(&canvas);
+		if *use_debug_color {
+			// paint magenta to entire canvas as debugging
+			draw_rect_fill(0, 0, *squares.img_width() as i32, *squares.img_height() as i32, Color::Magenta);
+		}//end if we're doing a debug fill
+		// paint dominant color to entire square using the canvas
+		for square in squares.iter() {
+			let a = (*square.x() as i32, *square.y() as i32, *square.width() as i32, *square.height() as i32);
+			let c = Color::from_rgb(square.color().0, square.color().1, square.color().2);
+			draw_rect_fill(a.0, a.1, a.2, a.3, c);
+		}//end painting dominant color to entirety of each square
+		ImageSurface::pop_current();
+	}//end squareularization_color_squares()
+
+	/// Function similar to squareularization_color_squares, this function allows you
+	/// to only color a select few squares instead of redoing the whole canvas.
+	pub fn squareularization_color_square(canvas: &ImageSurface, squares: Iter<Square>) {
+		ImageSurface::push_current(&canvas);
+		for square in squares {
+			let coords = (*square.x() as i32, *square.y() as i32, *square.width() as i32, *square.height() as i32);
+			let color = Color::from_rgb(square.color().0, square.color().1, square.color().2);
+			draw_rect_fill(coords.0, coords.1, coords.2, coords.3, color);
+		}//end looping over each square
+		ImageSurface::pop_current();
+	}//end squareularization_color_squares
