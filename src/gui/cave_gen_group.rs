@@ -4,7 +4,7 @@ use fltk::{app::{self, Sender}, button::Button, dialog, draw::{draw_line, draw_p
 
 use crate::{cellular_automata::CAC, gui::gui_utils::get_default_tab_padding, squares::{Square, SquareGrid}};
 
-use super::gui_utils::ListBox;
+use super::gui_utils::{ListBox, SquareStairDisplay};
 
 /// # enum DrawState
 /// This enum represents the current drawing state for the canvas.
@@ -19,25 +19,6 @@ enum DrawState {
 	/// indicates user is not allowed to draw anything
 	Disabled,
 }//end enum DrawState
-
-#[derive(Debug, PartialEq, PartialOrd, Clone)]
-pub struct SquareStairDisplay {
-	pub square: Square,
-	pub row_idx: usize,
-	pub col_idx: usize,
-}//end struct SquareStairDisplay
-
-impl Default for SquareStairDisplay {
-    fn default() -> Self {
-		Self { square: Square::new(0, 0, 0, 0), row_idx: Default::default(), col_idx: Default::default() }
-	}//end default()
-} //end struct SquareStairDisplay
-
-impl std::fmt::Display for SquareStairDisplay {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		write!(f, "Row: {}, Col: {}", self.row_idx, self.col_idx)
-	}//end fmt
-}//end impl Display for SquareStairDisplay
 
 pub struct CaveGenGroup {
 	ux_whole_tab_group: Tile,

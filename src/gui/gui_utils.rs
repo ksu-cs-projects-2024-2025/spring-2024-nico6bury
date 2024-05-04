@@ -1,6 +1,8 @@
 use fltk::{button::Button, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{self, Flex, FlexType, Pack, Scroll}, prelude::{GroupExt, WidgetBase, WidgetExt}, widget::Widget, widget_extends};
 use grid::Grid;
 
+use crate::squares::Square;
+
 /// # default window width
 /// gives the default width in pixels of the main window
 pub fn get_default_win_width() -> i32 {1000}
@@ -349,21 +351,40 @@ impl<T: std::fmt::Display> ListItem<T> {
 }//end impl for ListItem
 
 /// Rounds a usize into an i32. If we can't convert,
-	/// returns i32::MAX.
-	#[allow(dead_code)]
-	fn u_to_i(unsi: &usize) -> i32 {
-		match i32::try_from(*unsi) {
-			Ok(int) => int,
-			Err(_) => i32::MAX,
-		}//end matching cast result
-	}//end u_to_i
+/// returns i32::MAX.
+#[allow(dead_code)]
+fn u_to_i(unsi: &usize) -> i32 {
+	match i32::try_from(*unsi) {
+		Ok(int) => int,
+		Err(_) => i32::MAX,
+	}//end matching cast result
+}//end u_to_i
 
-	/// Rounds an int to a usize. If we can't convert,
-	/// returns 0.
-	#[allow(dead_code)]
-	fn i_to_u(int: &i32) -> usize {
-		match usize::try_from(*int) {
-			Ok(u) => u,
-			Err(_) => 0,
-		}//end matching result of cast
-	}//end i_to_u
+/// Rounds an int to a usize. If we can't convert,
+/// returns 0.
+#[allow(dead_code)]
+fn i_to_u(int: &i32) -> usize {
+	match usize::try_from(*int) {
+		Ok(u) => u,
+		Err(_) => 0,
+	}//end matching result of cast
+}//end i_to_u
+
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
+pub struct SquareStairDisplay {
+	pub square: Square,
+	pub row_idx: usize,
+	pub col_idx: usize,
+}//end struct SquareStairDisplay
+
+impl Default for SquareStairDisplay {
+    fn default() -> Self {
+		Self { square: Square::new(0, 0, 0, 0), row_idx: Default::default(), col_idx: Default::default() }
+	}//end default()
+} //end struct SquareStairDisplay
+
+impl std::fmt::Display for SquareStairDisplay {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "Row: {}, Col: {}", self.row_idx, self.col_idx)
+	}//end fmt
+}//end impl Display for SquareStairDisplay
