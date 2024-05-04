@@ -1164,6 +1164,10 @@ impl CaveGenGroup {
 		let pixels_width = squares_width * diameter_counter;
 		let pixels_height = squares_height * diameter_counter;
 		self.ux_cave_canvas_frame.set_size(pixels_width as i32, pixels_height as i32);
+		let stair_list_ref = &self.ux_stairs_list;
+		let stair_list_ref_clone = stair_list_ref.clone();
+		let mut stair_list_borrow = stair_list_ref_clone.as_ref().borrow_mut();
+		stair_list_borrow.clear_elements();
 		self.update_image_size_and_drawing();
 	}//end update_canvas(self)
 
