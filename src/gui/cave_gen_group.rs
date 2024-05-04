@@ -1,4 +1,4 @@
-use std::{cell::RefCell, rc::Rc};
+use std::{cell::RefCell, rc::Rc, slice::Iter};
 
 use fltk::{app::{self, Sender}, button::Button, dialog, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Pack, PackType, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
@@ -20,6 +20,25 @@ enum DrawState {
 	Disabled,
 }//end enum DrawState
 
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
+pub struct SquareStairDisplay {
+	pub square: Square,
+	pub row_idx: usize,
+	pub col_idx: usize,
+}//end struct SquareStairDisplay
+
+impl Default for SquareStairDisplay {
+    fn default() -> Self {
+		Self { square: Square::new(0, 0, 0, 0), row_idx: Default::default(), col_idx: Default::default() }
+	}//end default()
+} //end struct SquareStairDisplay
+
+impl std::fmt::Display for SquareStairDisplay {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "Row: {}, Col: {}", self.row_idx, self.col_idx)
+	}//end fmt
+}//end impl Display for SquareStairDisplay
+
 pub struct CaveGenGroup {
 	ux_whole_tab_group: Tile,
 	ux_cave_canvas_scroll: Scroll,
@@ -28,7 +47,7 @@ pub struct CaveGenGroup {
 	ux_cave_canvas_draw_state: Rc<RefCell<DrawState>>,
 	ux_cave_canvas_brush_size: Rc<RefCell<i32>>,
 	/// contains last SquareGrid, plus vec with row, col coords of all stairs we found
-	ux_last_square_grid_and_stair_list: Rc<RefCell<Option<(SquareGrid, Vec<(usize, usize)>)>>>,
+	ux_last_square_grid: Rc<RefCell<Option<SquareGrid>>>,
 	ux_level_cur_buf: TextBuffer,
 	ux_level_tot_buf: TextBuffer,
 	ux_squares_width_counter: Counter,
@@ -38,7 +57,10 @@ pub struct CaveGenGroup {
 	ux_ca_neighborhood_size_counter: Counter,
 	ux_ca_neighborhood_thresh_counter: Rc<RefCell<Counter>>,
 	ux_ca_generations_to_run_counter: Counter,
-	ux_stairs_list: ListBox<i32>,
+	ux_stairs_list: Rc<RefCell<ListBox<SquareStairDisplay>>>,
+	ux_wall_frame_ref: Rc<RefCell<Frame>>,
+	ux_floor_frame_ref: Rc<RefCell<Frame>>,
+	ux_stairs_frame_ref: Rc<RefCell<Frame>>,
 }//end struct CaveGenGroup
 
 impl Default for CaveGenGroup {
@@ -51,7 +73,7 @@ impl Default for CaveGenGroup {
 			ux_cave_canvas_image: Rc::from(RefCell::from(default_image_sur)),
 			ux_cave_canvas_draw_state: Rc::from(RefCell::from(DrawState::Disabled)),
 			ux_cave_canvas_brush_size: Rc::from(RefCell::from(1)),
-			ux_last_square_grid_and_stair_list: Rc::from(RefCell::from(None)),
+			ux_last_square_grid: Rc::from(RefCell::from(None)),
 			ux_level_cur_buf: Default::default(),
 			ux_level_tot_buf: Default::default(),
 			ux_squares_width_counter: Default::default(),
@@ -61,7 +83,10 @@ impl Default for CaveGenGroup {
 			ux_ca_neighborhood_size_counter: Default::default(),
 			ux_ca_neighborhood_thresh_counter: Default::default(),
 			ux_ca_generations_to_run_counter: Default::default(),
-			ux_stairs_list: ListBox::new(0, 0, 10, 10, 10),
+			ux_stairs_list: Rc::from(RefCell::from(ListBox::new(0, 0, 10, 10, 10))),
+			ux_wall_frame_ref: Rc::from(RefCell::from(Frame::default())),
+			ux_floor_frame_ref: Rc::from(RefCell::from(Frame::default())),
+			ux_stairs_frame_ref: Rc::from(RefCell::from(Frame::default())),
 		};
 		cave_gen_group.ux_whole_tab_group.end();
 		cave_gen_group.ux_cave_canvas_scroll.end();
@@ -422,9 +447,12 @@ impl CaveGenGroup {
 		self.ux_cave_canvas_draw_state = Rc::from(RefCell::from(DrawState::Floor));
 
 		// set handlers for all the buttons
-		let wall_frame_ref = Rc::from(RefCell::from(ux_wall_activation_frame));
-		let floor_frame_ref = Rc::from(RefCell::from(ux_floor_activation_frame));
-		let stairs_frame_ref = Rc::from(RefCell::from(ux_stair_activation_frame));
+		self.ux_wall_frame_ref = Rc::from(RefCell::from(ux_wall_activation_frame));
+		self.ux_floor_frame_ref = Rc::from(RefCell::from(ux_floor_activation_frame));
+		self.ux_stairs_frame_ref = Rc::from(RefCell::from(ux_stair_activation_frame));
+		let wall_frame_ref = &self.ux_wall_frame_ref; //Rc::from(RefCell::from(ux_wall_activation_frame));
+		let floor_frame_ref = &self.ux_floor_frame_ref; //Rc::from(RefCell::from(ux_floor_activation_frame));
+		let stairs_frame_ref = &self.ux_stairs_frame_ref; //Rc::from(RefCell::from(ux_stair_activation_frame));
 
 		ux_draw_wall_btn.handle({
 			let draw_state = self.ux_cave_canvas_draw_state.clone();
@@ -600,25 +628,17 @@ impl CaveGenGroup {
 		ux_exterior_flex.add(&ux_level_connection_settings_section_label);
 
 
-		let mut ux_level_connection_list: ListBox<i32> = ListBox::new(
+		let mut ux_level_connection_list: ListBox<SquareStairDisplay> = ListBox::new(
 			ux_level_connection_settings_section_label.x(),
 			ux_level_connection_settings_section_label.y() + ux_level_connection_settings_section_label.h(),
 			ux_exterior_flex.width() - 5,
 			ux_exterior_flex.height() - 200,
 			30
 		);
-		// begin debug test value entry
-		ux_level_connection_list.add_element(5);
-		ux_level_connection_list.add_element(69);
-		ux_level_connection_list.add_element(7);
-		ux_level_connection_list.add_element(11);
-		for elem in 0..=10 {
-			ux_level_connection_list.add_element(elem);
-		}
 		ux_level_connection_list.set_label_size(15);
 		// end debug test value entry
 		ux_exterior_flex.add_resizable(ux_level_connection_list.get_scroll_ref());
-		self.ux_stairs_list = ux_level_connection_list;
+		self.ux_stairs_list = Rc::from(RefCell::from(ux_level_connection_list));
 
 		let mut ux_level_connection_add_btn = Button::default()
 			.with_size(ux_exterior_flex.width(), 50)
@@ -658,11 +678,42 @@ impl CaveGenGroup {
 	}//end initialize_level_connection_settings(&mut self, ux_exterior_flex)
 
 	pub fn get_cave_gen_stairs_selected(&self) -> Vec<String> {
-		self.ux_stairs_list.get_selected_elements().into_iter().map(|val| format!("{}", val)).collect()
+		let stairs_list_ref = &self.ux_stairs_list;
+		let stairs_list_ref_clone = stairs_list_ref.clone();
+		let stairs_list_borrow = stairs_list_ref_clone.as_ref().borrow();
+		stairs_list_borrow.get_selected_elements().into_iter().map(|val| format!("{}", val)).collect()
 	}//end get_cave_gen_stairs-selected(self)(
 
+	/// Removes selected stairs from the list and canvas
 	pub fn remove_cave_gen_stairs_selected(&mut self) {
-		self.ux_stairs_list.remove_selected_elements()
+		let last_square_stair_ref = &self.ux_last_square_grid;
+		let last_square_stair_ref_clone = last_square_stair_ref.clone();
+		let mut last_square_stair_borrow = last_square_stair_ref_clone.as_ref().borrow_mut();
+		match last_square_stair_borrow.as_mut() {
+			Some(squares) => {
+				let stairs_list_ref = &self.ux_stairs_list;
+				let stairs_list_ref_clone = stairs_list_ref.clone();
+				let mut stairs_list_borrow = stairs_list_ref_clone.as_ref().borrow_mut();
+				let stairs_list_selected_elements = stairs_list_borrow.get_selected_elements();
+				let mut squares_to_recolor = Vec::new();
+				for selected_element in stairs_list_selected_elements {
+					match squares.get_mut(&selected_element.row_idx, &selected_element.col_idx) {
+						Some(this_square) => {
+							this_square.set_color((0,0,0));
+							squares_to_recolor.push(this_square.clone());
+						},
+						None => println!("Couldn't access square {:?} while removing stairs from list.", selected_element)
+					}//end matching whether we can get this square
+				}//end looping over each selected element
+				let canvas_ref = &self.ux_cave_canvas_image;
+				let canvas_ref_clone = canvas_ref.clone();
+				let canvas_borrow = canvas_ref_clone.borrow();
+				CaveGenGroup::squareularization_color_square(&canvas_borrow, squares_to_recolor.iter());
+				self.ux_cave_canvas_frame.redraw();
+				stairs_list_borrow.remove_selected_elements()
+			},
+			None => println!("We don't have last squares and stairs?"),
+		}//end matching whether we had last squarularization
 		// TODO: Also remove the relevant squares
 	}//end remove_cave_gen_stairs_selected(self)
 
@@ -687,6 +738,8 @@ impl CaveGenGroup {
 		let brush_size_ref = &self.ux_cave_canvas_brush_size;
 		let draw_state = &self.ux_cave_canvas_draw_state;
 		let surface_ref = &self.ux_cave_canvas_image;
+		let stairs_list_ref = &self.ux_stairs_list;
+		let last_square_grid_ref = &self.ux_last_square_grid;
 
 		self.ux_cave_canvas_frame.draw( {
 			let surface = surface_ref.clone();
@@ -705,25 +758,25 @@ impl CaveGenGroup {
 			let sub_pixel_scale_clone = sub_pixel_scale.clone();
 			let brush_size_clone = brush_size_ref.clone();
 			let draw_state = draw_state.clone();
-			let last_square_grid = self.ux_last_square_grid_and_stair_list.clone();
+			let last_square_grid = last_square_grid_ref.clone();
+			let stairs_list_ref_clone = stairs_list_ref.clone();
 			move |f, ev| {
-				let surface = surface.as_ref().borrow_mut();
-				let pixel_scale = pixel_scale_clone.as_ref().borrow();
-				let sub_pixel_scale_ref = sub_pixel_scale_clone.as_ref().borrow();
-				let brush_size = brush_size_clone.as_ref().borrow();
-				let draw_state_ref = draw_state.as_ref().borrow();
-				let mut last_square_grid_clone = last_square_grid.as_ref().borrow_mut();
+				let surface = surface.as_ref().borrow();
+				let pixel_scale = {pixel_scale_clone.as_ref().borrow().clone()};
+				let sub_pixel_scale_ref = {sub_pixel_scale_clone.as_ref().borrow().clone()};
+				let brush_size = {brush_size_clone.as_ref().borrow().clone()};
+				let draw_state_ref = {draw_state.as_ref().borrow().clone()};
 				// update draw color and size based on draw state
-				let draw_color = match *draw_state_ref {
+				let draw_color = match draw_state_ref {
 					DrawState::Wall => Color::Black,
 					DrawState::Floor => Color::White,
 					DrawState::Stair => Color::Green,
 					DrawState::Disabled => Color::White,
 				};
-				let draw_size = match *draw_state_ref {
-					DrawState::Wall => *pixel_scale * *brush_size,
-					DrawState::Floor => *pixel_scale * *brush_size,
-					DrawState::Stair => *pixel_scale,
+				let draw_size = match draw_state_ref {
+					DrawState::Wall => pixel_scale * brush_size,
+					DrawState::Floor => pixel_scale * brush_size,
+					DrawState::Stair => pixel_scale,
 					DrawState::Disabled => 0,
 				};
 				match ev {
@@ -754,10 +807,13 @@ impl CaveGenGroup {
 						true
 					},
 					Event::Released => {
-						let pixel_scale = *pixel_scale as usize;
+						let pixel_scale = pixel_scale as usize;
+						let mut last_square_grid_clone = last_square_grid.as_ref().borrow_mut();
+						let mut stairs_list_ref = stairs_list_ref_clone.as_ref().borrow_mut();
 						if let Some(squares) = CaveGenGroup::ux_squareularize_canvas(&surface, &pixel_scale, &sub_pixel_scale_ref) {
 							let stairs_list = CaveGenGroup::ux_get_stair_coord_list(&squares);
-							*last_square_grid_clone = Some((squares, stairs_list));
+							CaveGenGroup::ux_update_stairs_list(stairs_list.clone(), &mut stairs_list_ref);
+							*last_square_grid_clone = Some(squares);
 						}//end if we our squares properly
 
 						f.redraw();
@@ -775,16 +831,21 @@ impl CaveGenGroup {
 		self.ux_cave_canvas_frame.redraw();
 	}//end update_image_size_and_height(prev_w, prev_h)
 
+	fn ux_update_stairs_list(stairs_list: Vec<SquareStairDisplay>, stairs_list_box: &mut ListBox<SquareStairDisplay>) {
+		stairs_list_box.clear_elements();
+		stairs_list_box.set_elements(stairs_list);
+	}//end ux_update_stairs_list()
+
 	/// Gets a (row, col) list of coordinates pointing to every square in squares which
 	/// is classified as a stair via color and CA::CAC::classify().
-	fn ux_get_stair_coord_list(squares: &SquareGrid) -> Vec<(usize, usize)> {
+	fn ux_get_stair_coord_list(squares: &SquareGrid) -> Vec<SquareStairDisplay> {
 		let mut stairs_list = Vec::new();
 		for row in 0..*squares.rows() {
 			for col in 0..*squares.cols() {
 				match squares.get(&row, &col) {
 					Some(square) => {
 						if CAC::Stairs == CAC::classify(*square.color()) {
-							stairs_list.push((row, col));
+							stairs_list.push(SquareStairDisplay {square: *square, row_idx: row, col_idx: col});
 						}//end if we found a stair
 					},
 					None => println!("Failed to get an index when counting stairs?"),
@@ -837,10 +898,13 @@ impl CaveGenGroup {
 	}//end ux_squareularize_canvas(canvas)
 
 	/// Gets squareularized grid and returns that grid, 
-	/// including dominant color for each square.  
-	/// Also updates squareularization for ux_last_square_grid_and_stair_list.
-	pub fn get_squareularization(&mut self) -> Option<SquareGrid> {
-		match Self::squareularization_get_rgb_pixels(&self.ux_cave_canvas_image.as_ref().borrow()) {
+	/// including dominant color for each square.
+	pub fn get_squareularization(&self) -> Option<SquareGrid> {
+		let canvas_ref = &self.ux_cave_canvas_image;
+		let canvas_ref_clone = canvas_ref.clone();
+		let canvas_borrow = canvas_ref_clone.as_ref().borrow();
+		
+		match Self::squareularization_get_rgb_pixels(&canvas_borrow) {
 			Some(image_and_pixels) => {
 				let image = image_and_pixels.0;
 				let pixels = image_and_pixels.1;
@@ -855,8 +919,11 @@ impl CaveGenGroup {
 				match Self::squareularization_split_img_to_squares(&img_width, &img_height, &square_width, &square_height) {
 					Some(mut squares) => {
 						Self::squareularization_get_dominant_color(&mut squares, &pixels, &img_width, &square_width, &square_height);
-						let stairs = CaveGenGroup::ux_get_stair_coord_list(&squares);
-						*self.ux_last_square_grid_and_stair_list.as_ref().borrow_mut() = Some((squares.clone(), stairs));
+						// let stairs = CaveGenGroup::ux_get_stair_coord_list(&squares);
+						let last_square_grid_and_stair_list_ref = &self.ux_last_square_grid;
+						let last_square_grid_and_stair_list_ref_clone = last_square_grid_and_stair_list_ref.clone();
+						let mut last_square_grid_and_stair_list_borrow = last_square_grid_and_stair_list_ref_clone.as_ref().borrow_mut();
+						*last_square_grid_and_stair_list_borrow = Some(squares.clone());
 						Some(squares)
 					},
 					None => {
@@ -872,9 +939,13 @@ impl CaveGenGroup {
 	/// A new SquareGrid is generated when this struct is initialized as well, so this function
 	/// should theoretically always give an up-to-date squaregrid.
 	pub fn get_last_squareularization(&self) -> Option<SquareGrid> {
-		let last_squares = self.ux_last_square_grid_and_stair_list.as_ref().borrow().clone();
-		match last_squares {
-			Some((squares, _)) => Some(squares),
+		let last_squares_borrow = {
+			let last_squares_ref = &self.ux_last_square_grid;
+			let last_squares_ref_clone = last_squares_ref.clone();
+			let last_square_clone = last_squares_ref_clone.as_ref().borrow().clone();
+			last_square_clone};
+		match last_squares_borrow {
+			Some(squares) => Some(squares),
 			None => None,
 		}//end matching existence of last squareularization
 	}//end get_last_squareularization()
@@ -886,14 +957,19 @@ impl CaveGenGroup {
 	/// for more information, as calls to that function are the 
 	/// main reason for panics.
 	pub fn set_squareularization(&mut self, squares: &SquareGrid) {
-		let canvas = self.ux_cave_canvas_image.as_ref().borrow();
+		let canvas_ref = &self.ux_cave_canvas_image;
+		let canvas_ref_clone = canvas_ref.clone();
+		let canvas_borrow = canvas_ref_clone.borrow();
 
-		Self::squareularization_color_squares(&canvas, squares,&false);
+		Self::squareularization_color_squares(&canvas_borrow, squares,&false);
 		self.ux_cave_canvas_frame.redraw();
 
 		// update last squareularization
-		let stairs = CaveGenGroup::ux_get_stair_coord_list(squares);
-		*self.ux_last_square_grid_and_stair_list.as_ref().borrow_mut() = Some((squares.clone(), stairs));
+		// let stairs = CaveGenGroup::ux_get_stair_coord_list(squares);
+		let last_stairs_ref = &self.ux_last_square_grid;
+		let last_stairs_ref_clone = last_stairs_ref.clone();
+		let mut last_stairs_borrow = last_stairs_ref_clone.as_ref().borrow_mut();
+		*last_stairs_borrow = Some(squares.clone());
 	}//end set_squareularization(&mut self, square_info)
 
 	/// Helper function for ux_squareularize_canvas
@@ -1066,6 +1142,18 @@ impl CaveGenGroup {
 		}//end painting dominant color to entirety of each square
 		ImageSurface::pop_current();
 	}//end squareularization_color_squares()
+
+	/// Function similar to squareularization_color_squares, this function allows you
+	/// to only color a select few squares instead of redoing the whole canvas.
+	fn squareularization_color_square(canvas: &ImageSurface, squares: Iter<Square>) {
+		ImageSurface::push_current(&canvas);
+		for square in squares {
+			let coords = (*square.x() as i32, *square.y() as i32, *square.width() as i32, *square.height() as i32);
+			let color = Color::from_rgb(square.color().0, square.color().1, square.color().2);
+			draw_rect_fill(coords.0, coords.1, coords.2, coords.3, color);
+		}//end looping over each square
+		ImageSurface::pop_current();
+	}//end squareularization_color_squares
 
 	/// # update_canvas(&mut self)
 	/// This function updates the size of the drawing canvas based on user settings. 
