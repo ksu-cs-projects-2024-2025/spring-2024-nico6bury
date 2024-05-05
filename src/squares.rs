@@ -111,13 +111,13 @@ impl SquareGrid {
 
 	/// Gets a reference to the square at the specified location, assuming valid indices.
 	pub fn get(&self, row: &usize, col: &usize) -> Option<&Square> { 
-		let index = col * self.cols + row;
+		let index = row * self.cols + col;
 		if index < self.squares.len() {
 			Some(&self.squares[index]) } 
 		else { None }}
 	/// Gets a mutable reference to the square at the specified location, assuming valid indices.
 	pub fn get_mut(&mut self, row: &usize, col: &usize) -> Option<&mut Square> {
-		let index = col * self.cols + row;
+		let index = row * self.cols + col;
 		if index < self.squares.len() {
 			Some(&mut self.squares[index])
 		} else {None}}
