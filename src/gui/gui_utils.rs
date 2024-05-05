@@ -536,10 +536,10 @@ impl std::fmt::Display for SquareStairDisplay {
 							let pcs_dists = {
 								let mut tmp_dif_vec = Vec::new();
 								for color in pcs {
-									let r_diff = this_rgb.0 - color.0;
-									let g_diff = this_rgb.1 - color.1;
-									let b_diff = this_rgb.2 - color.2;
-									let t_diff = (r_diff as f32 + g_diff as f32 + b_diff as f32) / 3.;
+									let r_diff = this_rgb.0 as f32 - color.0 as f32;
+									let g_diff = this_rgb.1 as f32 - color.1 as f32;
+									let b_diff = this_rgb.2 as f32 - color.2 as f32;
+									let t_diff = (r_diff + g_diff + b_diff) / 3.;
 									tmp_dif_vec.push(t_diff);
 								}//end getting total average difference to each color
 								tmp_dif_vec
@@ -550,7 +550,7 @@ impl std::fmt::Display for SquareStairDisplay {
 									closest = (idx, *pcs_dist);
 								}//end if we have a better closest value
 							}//end finding closest of preferred colors
-							if let Some(color) = pcs.get(closest.0) { this_color = *color; }
+							if closest.1 <= 150. { if let Some(color) = pcs.get(closest.0) { this_color = *color; } }
 						}//end if this color is not preferred
 					}//end if we're applying a bias
 
@@ -572,7 +572,6 @@ impl std::fmt::Display for SquareStairDisplay {
 			}//end applying bias to color counts
 
 			// check to see which color has the highest count
-			// TODO: Prefer [0,0,0] [255,255,255] [0,255,0] [255,0,0] [0,0,255]
 			let mut running_most = ((40,40,40), 0);
 			for (i, count) in color_counts_count.iter().enumerate() {
 				if *count > running_most.1 { running_most = (color_counts_color[i], color_counts_count[i]); }
