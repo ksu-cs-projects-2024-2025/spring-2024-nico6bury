@@ -1,8 +1,8 @@
-use std::{cell::RefCell, rc::Rc, slice::Iter};
+use std::{cell::RefCell, rc::Rc};
 
-use fltk::{app::{self, Sender}, button::Button, dialog, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Pack, PackType, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
+use fltk::{app::{self, Sender}, button::Button, dialog, draw::{draw_line, draw_point, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 
-use crate::{cellular_automata::CAC, gui::gui_utils::get_default_tab_padding, squares::{Square, SquareGrid}};
+use crate::{cellular_automata::CAC, gui::gui_utils::get_default_tab_padding, squares::SquareGrid};
 
 use super::gui_utils::{squareularization_color_square, squareularization_color_squares, squareularization_get_dominant_color, squareularization_get_rgb_pixels, squareularization_split_img_to_squares, ux_squareularize_canvas, ListBox, SquareStairDisplay};
 
@@ -290,7 +290,7 @@ impl CaveGenGroup {
 			.with_align(Align::TopLeft);
 		self.ux_squares_pixel_diameter_counter.set_value(4.0);
 		self.ux_squares_pixel_diameter_counter.set_minimum(1.0);
-		self.ux_squares_pixel_diameter_counter.set_maximum(30.0);
+		self.ux_squares_pixel_diameter_counter.set_maximum(100.0);
 		self.ux_squares_pixel_diameter_counter.set_precision(0);
 		self.ux_squares_pixel_diameter_counter.set_step(1.0, 10);
 		self.ux_squares_pixel_diameter_counter.set_type(CounterType::Simple);
