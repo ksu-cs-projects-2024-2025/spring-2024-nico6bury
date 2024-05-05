@@ -54,25 +54,25 @@ impl CA {
 				// get bounds for valid row and cols, doing bounds checking
 				// squares out of bounds are counted as targets
 				let low_row: usize;
-				if row < self.neighborhood_size { low_row = 0; target_count += 1; } else { low_row = row - self.neighborhood_size; }
+				if row < self.neighborhood_size { low_row = 0; target_count += 3; } else { low_row = row - self.neighborhood_size; }
 				let low_col: usize;
-				if col < self.neighborhood_size { low_col = 0; target_count += 1; } else { low_col = col - self.neighborhood_size; }
+				if col < self.neighborhood_size { low_col = 0; target_count += 3; } else { low_col = col - self.neighborhood_size; }
 				let hih_row: usize;
-				if row + self.neighborhood_size > *squares.rows() - 1 { hih_row = *squares.rows() - 1; target_count += 1; }
+				if row + self.neighborhood_size > *squares.rows() - 1 { hih_row = *squares.rows() - 1; target_count += 3; }
 				else { hih_row = row + self.neighborhood_size; }
 				let hih_col: usize;// = col + self.neighborhood_size;
-				if col + self.neighborhood_size > *squares.cols() - 1 { hih_col = *squares.cols() - 1; target_count += 1; }
+				if col + self.neighborhood_size > *squares.cols() - 1 { hih_col = *squares.cols() - 1; target_count += 3; }
 				else { hih_col = col + self.neighborhood_size; }
 
 				// Count number of neighbors which CAC::classify(color) == target
-				for row_idx in low_row..(hih_row + 1) {
-					for col_idx in low_col..(hih_col + 1) {
+				for col_idx in low_col..(hih_col + 1) {
+					for row_idx in low_row..(hih_row + 1) {
 						if row_idx == row && col_idx == col { continue; }
 						match squares.get(&row_idx, &col_idx) {
 							Some(square) => if CAC::classify(*square.color()) == target { target_count += 1; },
 							None => println!("Somehow we had an invalid index when counting neighborhoods even though we pre-checked that."),}
-					}//end looping over col indices in neighborhood of row, col
-				}//end looping over row indices in neighborhood of row, col
+					}//end looping over row indices in neighborhood of row, col
+				}//end looping over col indices in neighborhood of row, col
 		
 				Some(target_count)
 			}, None => {None}}
