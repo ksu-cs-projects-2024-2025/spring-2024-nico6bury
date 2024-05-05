@@ -1,6 +1,6 @@
 use std::slice::Iter;
 
-use fltk::{button::Button, draw::draw_rect_fill, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{self, Flex, FlexType, Pack, Scroll}, prelude::{GroupExt, ImageExt, SurfaceDevice, WidgetBase, WidgetExt}, surface::ImageSurface, widget::Widget, widget_extends};
+use fltk::{button::Button, draw::{draw_rect_fill, draw_rect_with_color}, enums::{Align, Color, Event, FrameType}, group::{self, Flex, Pack, Scroll}, prelude::{GroupExt, ImageExt, SurfaceDevice, WidgetBase, WidgetExt}, surface::ImageSurface, widget::Widget, widget_extends};
 use grid::Grid;
 
 use crate::squares::{Square, SquareGrid};
@@ -21,8 +21,6 @@ pub fn get_default_tab_padding() -> i32 {10}
 
 fn get_default_grid_width() -> i32 {get_default_win_width() - 400}
 fn get_default_grid_height() -> i32 {get_default_win_height()-get_default_menu_height() - get_default_tab_padding() - 225}
-fn get_max_grid_button_width() -> i32 {30}
-fn get_max_grid_button_height() -> i32 {15}
 
 /// # FlexGrid
 /// 
@@ -127,6 +125,7 @@ pub struct ListBox<T > where T : std::fmt::Display {
 	element_height: usize,
 }//end struct ListBox
 
+#[allow(dead_code)]
 impl<T: std::fmt::Display> ListBox<T> {
 	/// Creates a new ListBox with the given size.
 	pub fn new(x: i32, y: i32, width: i32, height: i32, element_height: usize) -> ListBox<T> {
@@ -212,7 +211,7 @@ impl<T: std::fmt::Display> ListBox<T> {
 	pub fn set_elements(&mut self, option_list: Vec<T>) {
 		// create the new list of elements
 		let mut temp_elements = Vec::new();
-		let ieh = u_to_i(&self.element_height);
+		// let ieh = u_to_i(&self.element_height);
 		for val in option_list {
 			let temp_list_item = ListItem::new(50, self.element_height, val);
 			temp_elements.push(temp_list_item);
@@ -285,6 +284,7 @@ pub struct ListItem<T > where T: std::fmt::Display {
 	frame: Button,
 }//end struct ListItem
 
+#[allow(dead_code)]
 impl<T: std::fmt::Display> ListItem<T> {
 	pub fn new(w: usize, h: usize, val: T) -> ListItem<T> {
 		let wi = u_to_i(&w);
@@ -420,7 +420,7 @@ impl std::fmt::Display for SquareStairDisplay {
 						squareularization_get_dominant_color(&mut squares, preferred_colors, &pixels, &img_width, &square_width, &square_height);
 		
 						// paint dominant color to entire square using the canvas
-						squareularization_color_squares(canvas, &squares, &true);
+						squareularization_color_squares(canvas, &squares, &false);
 		
 						Some(squares)
 					},
@@ -482,16 +482,16 @@ impl std::fmt::Display for SquareStairDisplay {
 	pub fn squareularization_split_img_to_squares(img_width: &usize, img_height: &usize, square_width: &usize, square_height: &usize) -> Option<SquareGrid> {
 		let mut squares: Vec<Square> = Vec::new();
 		// format of (x, y, Color), assume square_width and square_height, fill in color later
-		for mut x in (0..*img_width).step_by(*square_width) {
+		for mut y in (0..*img_height).step_by(*square_height) {
 			// Squares at edges might overlap, but they won't be out of bounds
-			if x + square_width > *img_width {x = img_width - square_width;}
-			for mut y in (0..*img_height).step_by(*square_height) {
+			if y + square_height > *img_height {y = img_height - square_height;}
+			for mut x in (0..*img_width).step_by(*square_width) {
 				// Squares at edges might overlap, but they won't be out of bounds
-				if y + square_height > *img_height {y = img_height - square_height;}
+				if x + square_width > *img_width {x = img_width - square_width;}
 				let square = Square::new(x,y, *square_width, *square_height);
 				squares.push(square);
-			}//end looping over all potential y values for sub-squares
-		}//end looping over all potential x values for sub-squares
+			}//end looping over all potential x values for sub-squares
+		}//end looping over all potential y values for sub-squares
 		match SquareGrid::from_squares(squares, *img_width, *img_height) {
 			Ok(square_grid) => {
 				Some(square_grid)
@@ -539,7 +539,7 @@ impl std::fmt::Display for SquareStairDisplay {
 									let r_diff = this_rgb.0 as f32 - color.0 as f32;
 									let g_diff = this_rgb.1 as f32 - color.1 as f32;
 									let b_diff = this_rgb.2 as f32 - color.2 as f32;
-									let t_diff = (r_diff + g_diff + b_diff) / 3.;
+									let t_diff = (r_diff.abs() + g_diff.abs() + b_diff.abs()) / 3.;
 									tmp_dif_vec.push(t_diff);
 								}//end getting total average difference to each color
 								tmp_dif_vec
@@ -550,7 +550,7 @@ impl std::fmt::Display for SquareStairDisplay {
 									closest = (idx, *pcs_dist);
 								}//end if we have a better closest value
 							}//end finding closest of preferred colors
-							if closest.1 <= 150. { if let Some(color) = pcs.get(closest.0) { this_color = *color; } }
+							if closest.1 <= 150. && this_rgb != (255,0,255) { if let Some(color) = pcs.get(closest.0) { this_color = *color; } }
 						}//end if this color is not preferred
 					}//end if we're applying a bias
 
@@ -567,6 +567,7 @@ impl std::fmt::Display for SquareStairDisplay {
 			for (i, color) in color_counts_color.iter().enumerate() {
 				match *color {
 					(0,255,0) => color_counts_count[i] *= 500,
+					(255,0,255) => color_counts_count[i] *= 0,
 					_ => {},
 				}//end matching bias to colors
 			}//end applying bias to color counts
@@ -612,6 +613,7 @@ impl std::fmt::Display for SquareStairDisplay {
 			let a = (*square.x() as i32, *square.y() as i32, *square.width() as i32, *square.height() as i32);
 			let c = Color::from_rgb(square.color().0, square.color().1, square.color().2);
 			draw_rect_fill(a.0, a.1, a.2, a.3, c);
+			if *use_debug_color { draw_rect_with_color(a.0, a.1, a.2, a.3, Color::Magenta); }
 		}//end painting dominant color to entirety of each square
 		ImageSurface::pop_current();
 	}//end squareularization_color_squares()
