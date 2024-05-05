@@ -3,10 +3,11 @@ use fltk::{app::{self, App, Receiver, Sender}, button::Button, dialog, enums::{F
 
 use crate::squares::SquareGrid;
 
-use self::{cave_gen_group::CaveGenGroup, gui_utils::{get_default_menu_height, get_default_tab_padding, get_default_win_height, get_default_win_width}};
+use self::{room_gen_group::RoomGenGroup, cave_gen_group::CaveGenGroup, gui_utils::{get_default_menu_height, get_default_tab_padding, get_default_win_height, get_default_win_width}};
 
 mod gui_utils;
 mod cave_gen_group;
+mod room_gen_group;
 
 pub struct GUI {
 	/// application struct everything runs in
@@ -26,7 +27,7 @@ pub struct GUI {
 	/// tab contains settings for cave generation, allows specification of input map
 	ux_cave_gen_tab: CaveGenGroup,
 	/// tab contains settings for room-based structure generation, allows specification of room map
-	ux_room_gen_tab: Group,
+	ux_room_gen_tab: RoomGenGroup,
 	/// tab contains settings for where structures should be in relation to each other
 	ux_multi_gen_tab: Group,
 	/// tab contains output image of map, displayed using some sort of canvas drawing in all likelihood
@@ -45,7 +46,7 @@ impl Default for GUI {
 			ux_tab_container: Tabs::default(),
 			ux_gen_setting_tab: Group::default(),
 			ux_cave_gen_tab: CaveGenGroup::default(),
-			ux_room_gen_tab: Group::default(),
+			ux_room_gen_tab: RoomGenGroup::default(),
 			ux_multi_gen_tab: Group::default(),
 			ux_output_img_tab: Group::default(),
 		};//end struct construction
@@ -156,12 +157,13 @@ impl GUI {
 		self.ux_cave_gen_tab.initialize(&self.msg_sender);
 
 		// third tab settings
-		self.ux_room_gen_tab = Group::default()
+		self.ux_room_gen_tab = RoomGenGroup::default()
 			.with_pos(0, self.ux_tab_container.y() + get_default_tab_padding())
 			.with_size(self.ux_tab_container.width(), self.ux_tab_container.height())
 			.with_label("Structure Generation");
 		self.ux_room_gen_tab.end();
-		self.ux_tab_container.add(&self.ux_room_gen_tab);
+		self.ux_tab_container.add(&*self.ux_room_gen_tab);
+		self.ux_room_gen_tab.initialize(&self.msg_sender);
 
 		// fourth tab settings
 		self.ux_multi_gen_tab = Group::default()
@@ -204,8 +206,8 @@ impl GUI {
 				self.ux_tab_container.set_value(&*self.ux_cave_gen_tab).expect("Should be able to set vis cave tab.");
 			},
 			2 => {
-				if cur_vis.is_same(&self.ux_room_gen_tab) {return;}
-				self.ux_tab_container.set_value(&self.ux_room_gen_tab).expect("Should be able to set vis room tab.");
+				if cur_vis.is_same(&*self.ux_room_gen_tab) {return;}
+				self.ux_tab_container.set_value(&*self.ux_room_gen_tab).expect("Should be able to set vis room tab.");
 			},
 			3 => {
 				if cur_vis.is_same(&self.ux_multi_gen_tab) {return;}
@@ -265,6 +267,10 @@ impl GUI {
 		self.ux_cave_gen_tab.update_canvas();
 	}//end update_cave_canvas
 
+	pub fn update_room_canvas(&mut self) {
+		self.ux_room_gen_tab.update_canvas();
+	}//end update-build_canvas
+
 	/// Gets representation of grid of color from cave canvas.
 	/// First two elements in Vector are width and height of each square.  
 	/// Format of vec is x,y coord of upper left of each square, plus color for that square in RGB.  
@@ -292,9 +298,17 @@ impl GUI {
 		self.ux_cave_gen_tab.get_cave_gen_stairs_selected()
 	}//end get_cave_gen_stairs_selected(self)
 
+	pub fn get_room_gen_stairs_selected(&self) -> Vec<String> {
+		self.ux_room_gen_tab.get_stairs_selected()
+	}
+
 	pub fn remove_cave_gen_stairs_selected(&mut self) {
 		self.ux_cave_gen_tab.remove_cave_gen_stairs_selected()
 	}//end remove_cave_gen_stairs_selected(self)
+
+	pub fn remove_room_gen_stairs_selected(&mut self) {
+		self.ux_room_gen_tab.remove_stairs_selected()
+	}
 
 	/// Displays message to user, asking them yes or no.  
 	/// If user answers yes, then returns true.  
