@@ -695,7 +695,6 @@ impl CaveGenGroup {
 			},
 			None => println!("We don't have last squares and stairs?"),
 		}//end matching whether we had last squarularization
-		// TODO: Also remove the relevant squares
 	}//end remove_cave_gen_stairs_selected(self)
 
 	/// # update_image_size_and_drawing(&mut self)
