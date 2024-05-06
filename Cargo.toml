@@ -9,4 +9,5 @@ edition = "2021"
 fltk = { version = "^1.4", features = ["fltk-bundled"] }
 fltk-theme = "0.7.2"
 grid = "0.13.0"
+image = { version = "0.25.1", features = ["webp", "png", "jpeg", "bmp"], default-features = false }
 rusqlite = { version = "0.30.0", features = ["bundled"] }
