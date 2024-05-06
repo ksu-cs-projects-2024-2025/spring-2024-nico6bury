@@ -1,8 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use fltk::{app::{self, Sender}, button::Button, dialog, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
-
-use crate::squares::SquareGrid;
+use nice_map_generator::squares::SquareGrid;
 
 use super::gui_utils::{get_default_tab_padding, squareularization_color_square, ux_squareularize_canvas, ListBox, SquareStairDisplay};
 

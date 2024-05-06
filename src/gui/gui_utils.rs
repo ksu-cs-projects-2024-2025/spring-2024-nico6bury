@@ -2,8 +2,7 @@ use std::slice::Iter;
 
 use fltk::{button::Button, draw::{draw_rect_fill, draw_rect_with_color}, enums::{Align, Color, Event, FrameType}, group::{self, Flex, Pack, Scroll}, prelude::{GroupExt, ImageExt, SurfaceDevice, WidgetBase, WidgetExt}, surface::ImageSurface, widget::Widget, widget_extends};
 use grid::Grid;
-
-use crate::squares::{Square, SquareGrid};
+use nice_map_generator::squares::{Square, SquareGrid};
 
 /// # default window width
 /// gives the default width in pixels of the main window

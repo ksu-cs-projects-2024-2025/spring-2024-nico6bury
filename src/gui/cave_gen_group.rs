@@ -1,10 +1,9 @@
 use std::{cell::RefCell, rc::Rc};
 
 use fltk::{app::{self, Sender}, button::Button, dialog, draw::{draw_line, draw_point, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
+use nice_map_generator::{cellular_automata::CAC, squares::SquareGrid};
 
-use crate::{cellular_automata::CAC, gui::gui_utils::get_default_tab_padding, squares::SquareGrid};
-
-use super::gui_utils::{squareularization_color_square, squareularization_color_squares, squareularization_get_dominant_color, squareularization_get_rgb_pixels, squareularization_split_img_to_squares, ux_squareularize_canvas, ListBox, SquareStairDisplay};
+use super::gui_utils::{get_default_tab_padding, squareularization_color_square, squareularization_color_squares, squareularization_get_dominant_color, squareularization_get_rgb_pixels, squareularization_split_img_to_squares, ux_squareularize_canvas, ListBox, SquareStairDisplay};
 
 /// # enum DrawState
 /// This enum represents the current drawing state for the canvas.

@@ -1,11 +1,8 @@
 
 use gui::GUI;
-
-use crate::cellular_automata::CA;
+use nice_map_generator::cellular_automata::CA;
 
 mod gui;
-mod squares;
-mod cellular_automata;
 
 fn main() {
     // struct that contains all GUI elements
