@@ -21,15 +21,19 @@ enum DrawState {
 }//end enum DrawState
 
 impl DrawState {
-	fn get_color_vec_u8() -> Vec<(u8,u8,u8)> {
+	fn get_color_vec() -> Vec<Color> {
 		let mut color_vec = Vec::new();
-		color_vec.push(Color::Black.to_rgb());
-		color_vec.push(Color::White.to_rgb());
-		color_vec.push(Color::Green.to_rgb());
-		color_vec.push(Color::Blue.to_rgb());
-		color_vec.push(Color::Red.to_rgb());
-		color_vec.push(Color::Light1.to_rgb());
+		color_vec.push(Color::Red);
+		color_vec.push(Color::Blue);
+		color_vec.push(Color::Black);
+		color_vec.push(Color::White);
+		color_vec.push(Color::Green);
+		color_vec.push(Color::Light1);
 		color_vec
+	}
+	
+	fn get_color_vec_u8() -> Vec<(u8,u8,u8)> {
+		DrawState::get_color_vec().iter().map(|elem| elem.to_rgb()).collect()
 	}
 }
 
