@@ -511,80 +511,64 @@ impl RoomGenGroup {
 		let mut ux_interior_flex_3 = Flex::default().with_type(FlexType::Row);
 		ux_interior_flex_3.end();
 		ux_exterior_flex.add(&ux_interior_flex_3);
+		let mut ux_interior_flex_4 = Flex::default().with_type(FlexType::Row);
+		ux_interior_flex_4.end();
+		ux_exterior_flex.add(&ux_interior_flex_4);
 
 		// add room starts controls
-		let mut ux_room_start_help_btn = Button::default()
-			.with_label("Help");
+		let mut ux_room_start_help_btn = Button::default().with_label("Help");
 		ux_interior_flex_1.add(&ux_room_start_help_btn);
 		ux_interior_flex_1.fixed(&ux_room_start_help_btn, 70);
-		ux_room_start_help_btn.handle({
-			move |_, ev| {
-				match ev {
-					Event::Released => {
-						dialog::message_default("Help dialog test for room starts.");
-						true
-					},
-					_ => false,
-				}//end matching events
-			}//end closure
-		});
+		ux_room_start_help_btn.set_callback({move |_| {
+			dialog::message_default("Help dialog test for room starts.");
+		}});
 
-		let mut ux_room_start_place_btn = Button::default()
-			.with_label("Place Room Starts");
+		let mut ux_room_start_place_btn = Button::default().with_label("Place Room Starts");
 		ux_room_start_place_btn.emit(msg_sender.clone(), String::from("RoomGen:RoomStarts"));
 		ux_interior_flex_1.add(&ux_room_start_place_btn);
 
 		// add constrained room growth controls
-		let mut ux_room_growth_help_btn = Button::default()
-			.with_label("Help");
+		let mut ux_room_growth_help_btn = Button::default().with_label("Help");
 		ux_interior_flex_2.add(&ux_room_growth_help_btn);
 		ux_interior_flex_2.fixed(&ux_room_growth_help_btn, 70);
-		ux_room_growth_help_btn.handle({
-			move |_, ev| {
-				match ev {
-					Event::Released => {
-						dialog::message_default("Help dialog test for constrained growth of rooms.");
-						true
-					},
-					_ => false
-				}//end matching events
-			}//end closure
-		});
+		ux_room_growth_help_btn.set_callback({move |_| {
+			dialog::message_default("Help dialog test for initial growth of rooms.");
+		}});
 
-		let mut ux_room_growth_start_btn = Button::default()
-			.with_label("Constrained Growth");
-		ux_room_growth_start_btn.emit(msg_sender.clone(), String::from("RoomGen:ConstrainedGrowth"));
+		let mut ux_room_growth_start_btn = Button::default().with_label("Initial Room Growth");
+		ux_room_growth_start_btn.emit(msg_sender.clone(), String::from("RoomGen:InitialGrowth"));
 		ux_interior_flex_2.add(&ux_room_growth_start_btn);
 
+		// L growth controls
+		let mut ux_room_l_growth_help_btn = Button::default().with_label("Help");
+		ux_interior_flex_3.add(&ux_room_l_growth_help_btn);
+		ux_interior_flex_3.fixed(&ux_room_l_growth_help_btn, 70);
+		ux_room_l_growth_help_btn.set_callback({move |_| {
+			dialog::message_default("Help dialog test for l growth of rooms.")
+		}});
+
+		let mut ux_room_l_growth_start_btn = Button::default().with_label("L Growth");
+		ux_interior_flex_3.add(&ux_room_l_growth_start_btn);
+		ux_room_l_growth_start_btn.emit(msg_sender.clone(), String::from("RoomGen:LGrowth"));
+
 		// add connectivity controls
-		let mut ux_connectivity_btn = Button::default()
-			.with_label("Connectivity");
+		let mut ux_connectivity_btn = Button::default().with_label("Connectivity");
 		ux_connectivity_btn.emit(msg_sender.clone(), String::from("RoomGen:Connectivity"));
-		ux_interior_flex_3.add(&ux_connectivity_btn);
+		ux_interior_flex_4.add(&ux_connectivity_btn);
 
-		let mut ux_connectivity_help_btn = Button::default()
-			.with_label("Help");
-		ux_interior_flex_3.add(&ux_connectivity_help_btn);
-		ux_interior_flex_3.fixed(&ux_connectivity_help_btn, 70);
-		ux_connectivity_help_btn.handle({
-			move |_, ev| {
-				match ev {
-					Event::Released => {
-						dialog::message_default("Help dialog test for connectivity settings.");
-						true
-					},
-					_ => false,
-				}//end matching events
-			}//end closure
-		});
+		let mut ux_connectivity_help_btn = Button::default().with_label("Help");
+		ux_interior_flex_4.add(&ux_connectivity_help_btn);
+		ux_interior_flex_4.fixed(&ux_connectivity_help_btn, 70);
+		ux_connectivity_help_btn.set_callback({move |_| {
+			dialog::message_default("Help dialog test for connectivity settings.");
+		}});
 
-		let mut ux_connectivity_limit_counter = Counter::default()
-			.with_type(CounterType::Simple);
+		let mut ux_connectivity_limit_counter = Counter::default().with_type(CounterType::Simple);
 		ux_connectivity_limit_counter.set_value(5.0);
 		ux_connectivity_limit_counter.set_bounds(1.0, 30.0);
 		ux_connectivity_limit_counter.set_precision(0);
 		ux_connectivity_limit_counter.set_step(1.0, 5);
-		ux_interior_flex_3.add(&ux_connectivity_limit_counter);
+		ux_interior_flex_4.add(&ux_connectivity_limit_counter);
 	}	
 
 	fn initialize_level_connection_settings(&mut self, ux_exterior_flex: &mut Flex, msg_sender: &Sender<String>) {
