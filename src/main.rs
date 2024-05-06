@@ -1,6 +1,6 @@
 
 use gui::GUI;
-use nice_map_generator::cellular_automata::CA;
+use nice_map_generator::{cellular_automata::CA, export};
 
 mod gui;
 
@@ -80,6 +80,28 @@ fn main() {
                     } else {
                         GUI::message("No Level Connections Selected. Please select connections to remove.");
                     }//end else we just need to say that there are no level connections selected
+                },
+                "Export:PNG" | "Export:JPEG" | "Export:BMP" | "Export:WEBP" => {
+                    let img_format = val.split(":").last().unwrap_or("PNG").to_lowercase();
+                    let cave_room_choice = GUI::choice_dialog("Do you want to save a cave map or a room map?", "Cave", "Room");
+                    if let Some(cave_room_choice) = cave_room_choice {
+                        if let Some(mut pathbuf) = GUI::save_img_dialog(&img_format) {
+                            pathbuf.set_extension(img_format.to_lowercase());
+                            match cave_room_choice {
+                                "Cave" => {
+                                    if let Some(squares) = gui.get_cave_canvas_squareularization() {
+                                        let square_img = export::generate_img_from_map(&squares);
+                                        square_img.save(pathbuf).expect("Failed to save img");
+                                    }//end if we can get a SquareGrid from the cave canvas
+                                }, "Room" => {
+                                    if let Some(squares) = gui.get_room_canvas_squareularization() {
+                                        let square_img = export::generate_img_from_map(&squares);
+                                        square_img.save(pathbuf).expect("Failed to save img");
+                                    }
+                                }, _ => println!("Unrecognized Cave or Room choice: {}", cave_room_choice),
+                            }//end matching user choice
+                        }//end if we have a file path to save to
+                    }//end if user is deciding between cave and room map to save
                 },
                 _ => {
                     println!("Value not recognized: {}", val);

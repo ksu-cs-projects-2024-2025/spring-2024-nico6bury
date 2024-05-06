@@ -805,6 +805,17 @@ impl RoomGenGroup {
 		self.update_image_size_and_drawing();
 	}//end update_canvas
 
+	pub fn get_last_squareularization(&self) -> Option<SquareGrid> {
+		let last_squares = &self.ux_last_square_grid;
+		let last_squares = last_squares.clone();
+		let last_squares = last_squares.as_ref().try_borrow();
+		match last_squares {
+			Ok(last_squares) => {
+				last_squares.clone()
+			}, Err(_) => None,
+		}//end matching last_squares borrow
+	}//end get_last_squareularization(self)
+
 }//end impl for RoomGenGroup
 
 widget_extends!(RoomGenGroup, Tile, ux_whole_tab_group);
