@@ -14,8 +14,24 @@ enum DrawState {
 	Wall,
 	Floor,
 	Stair,
+	Empty,
+	Door,
+	RoomStart,
 	Disabled,
 }//end enum DrawState
+
+impl DrawState {
+	fn get_color_vec_u8() -> Vec<(u8,u8,u8)> {
+		let mut color_vec = Vec::new();
+		color_vec.push(Color::Black.to_rgb());
+		color_vec.push(Color::White.to_rgb());
+		color_vec.push(Color::Green.to_rgb());
+		color_vec.push(Color::Blue.to_rgb());
+		color_vec.push(Color::Red.to_rgb());
+		color_vec.push(Color::Light1.to_rgb());
+		color_vec
+	}
+}
 
 pub struct RoomGenGroup {
 	ux_whole_tab_group: Tile,
@@ -32,9 +48,7 @@ pub struct RoomGenGroup {
 	ux_squares_pixel_diameter_counter: Counter,
 	ux_sub_pixel_scale: usize,
 	ux_stairs_list: Rc<RefCell<ListBox<SquareStairDisplay>>>,
-	ux_wall_frame_ref: Rc<RefCell<Frame>>,
-	ux_floor_frame_ref: Rc<RefCell<Frame>>,
-	ux_stair_frame_ref: Rc<RefCell<Frame>>,
+	ux_draw_frame_ref: Rc<RefCell<Frame>>,
 }//end struct RoomGenGroup
 
 impl Default for RoomGenGroup {
@@ -55,9 +69,7 @@ impl Default for RoomGenGroup {
 			ux_squares_pixel_diameter_counter: Default::default(),
 			ux_sub_pixel_scale: 1,
 			ux_stairs_list: Rc::from(RefCell::from(ListBox::new(0,0,10,10,10))),
-			ux_wall_frame_ref: Rc::from(RefCell::from(Frame::default())),
-			ux_floor_frame_ref: Rc::from(RefCell::from(Frame::default())),
-			ux_stair_frame_ref: Rc::from(RefCell::from(Frame::default())),
+			ux_draw_frame_ref: Rc::from(RefCell::from(Frame::default())),
 		};//end struct construction
 		build_gen_group.ux_whole_tab_group.end();
 		build_gen_group.ux_canvas_scroll.end();
@@ -296,8 +308,9 @@ impl RoomGenGroup {
 
 	fn initialize_drawing_settings(&mut self, ux_exterior_flex: &mut Flex) {
 		// label for this section
-		let ux_drawing_setting_section_label = Frame::default().with_label("Drawing Settings");
+		let ux_drawing_setting_section_label = Frame::default().with_label("Drawing Settings").with_align(Align::Center);
 		ux_exterior_flex.add(&ux_drawing_setting_section_label);
+		ux_exterior_flex.fixed(&ux_drawing_setting_section_label, 25);
 		
 		// flex for holding active/inactive identifiers
 		let mut ux_interior_flex_1 = Flex::default()
@@ -318,61 +331,62 @@ impl RoomGenGroup {
 		ux_exterior_flex.add(&ux_interior_flex_2);
 
 		// set up frames to show whether each drawing mode is active
-		let mut ux_wall_activation_frame = Frame::default()
-			.with_pos(ux_interior_flex_1.x(), ux_interior_flex_1.y())
-			.with_size(ux_interior_flex_1.width() / 3, ux_interior_flex_1.height())
-			.with_label("Activated");
-		ux_wall_activation_frame.set_color(Color::DarkGreen);
-		ux_wall_activation_frame.set_frame(FrameType::FlatBox);
-		ux_interior_flex_1.add(&ux_wall_activation_frame);
+		let mut ux_draw_doors_btn = Button::default()
+			.with_label("Doors");
+		ux_draw_doors_btn.set_color(Color::Blue);
+		ux_draw_doors_btn.set_label_color(Color::White);
+		ux_draw_doors_btn.set_frame(FrameType::FlatBox);
+		ux_interior_flex_1.add(&ux_draw_doors_btn);
 
-		let mut ux_floor_activation_frame = Frame::default()
-			.with_pos(ux_wall_activation_frame.x() + ux_wall_activation_frame.width(), ux_interior_flex_1.y())
-			.with_size(ux_interior_flex_1.width() / 3, ux_interior_flex_1.height())
-			.with_label("Disabled");
-		ux_floor_activation_frame.set_color(Color::Red);
-		ux_floor_activation_frame.set_frame(FrameType::FlatBox);
-		ux_interior_flex_1.add(&ux_floor_activation_frame);
+		let mut ux_draw_room_start_btn = Button::default()
+			.with_label("Room Start");
+		ux_draw_room_start_btn.set_color(Color::Red);
+		ux_draw_room_start_btn.set_frame(FrameType::FlatBox);
+		ux_interior_flex_1.add(&ux_draw_room_start_btn);
 
-		let mut ux_stair_activation_frame = Frame::default()
-			.with_pos(ux_floor_activation_frame.x() + ux_floor_activation_frame.width(), ux_interior_flex_1.y())
-			.with_size(ux_interior_flex_1.width() / 3, ux_interior_flex_1.height())
-			.with_label("Disabled");
-		ux_stair_activation_frame.set_color(Color::Red);
-		ux_stair_activation_frame.set_frame(FrameType::FlatBox);
-		ux_interior_flex_1.add(&ux_stair_activation_frame);
+		let mut ux_draw_empty_btn = Button::default()
+			.with_label("Erase");
+		ux_draw_empty_btn.set_color(Color::White);
+		ux_draw_empty_btn.set_frame(FrameType::FlatBox);
+		ux_interior_flex_1.add(&ux_draw_empty_btn);
 
 		// set up buttons to choose between different drawing modes
 		let mut ux_draw_wall_btn = Button::default()
-			.with_pos(ux_interior_flex_2.x(), ux_interior_flex_2.y())
-			.with_size(ux_interior_flex_2.width() / 3, ux_interior_flex_2.height())
-			.with_label("Draw Wall");
+			.with_label("Wall");
 		ux_draw_wall_btn.set_color(Color::Black);
 		ux_draw_wall_btn.set_label_color(Color::White);
 		ux_interior_flex_2.add(&ux_draw_wall_btn);
 		
 
 		let mut ux_draw_floor_btn = Button::default()
-			.with_pos(ux_draw_wall_btn.x() + ux_draw_wall_btn.width(), ux_interior_flex_2.y())
-			.with_size(ux_interior_flex_2.width() / 3, ux_interior_flex_2.height())
-			.with_label("Draw Floor");
-		ux_draw_floor_btn.set_color(Color::White);
+			.with_label("Floor");
+		ux_draw_floor_btn.set_color(Color::Light1);
 		ux_interior_flex_2.add(&ux_draw_floor_btn);
 
 		let mut ux_draw_stairs_btn = Button::default()
-			.with_pos(ux_draw_floor_btn.x() + ux_draw_floor_btn.width(), ux_interior_flex_2.y())
-			.with_size(ux_interior_flex_2.width() / 3, ux_interior_flex_2.height())
-			.with_label("Draw Stairs");
+			.with_label("Stairs");
 		ux_draw_stairs_btn.set_color(Color::Green);
 		ux_interior_flex_2.add(&ux_draw_stairs_btn);
 
+		// draw state label frame
+		let ux_draw_activation_frame = Frame::default()
+			.with_label("No Mode Selected");
+		ux_exterior_flex.add(&ux_draw_activation_frame);
+		ux_exterior_flex.fixed(&ux_draw_activation_frame, 20);
+
 		// set up controls for choosing brush size
+		let mut ux_interior_flex_3 = Flex::default()
+			.with_type(FlexType::Row);
+		ux_interior_flex_3.end();
+		ux_exterior_flex.add(&ux_interior_flex_3);
+
 		let ux_brush_size_label = Frame::default()
 			.with_pos(ux_interior_flex_2.x(), ux_interior_flex_2.y() + ux_interior_flex_2.height())
 			.with_size(ux_exterior_flex.width(), ux_exterior_flex.height() / 4)
-			.with_label("Set Brush Width, based on Canvas scale")
+			.with_label("Brush Width")
 			.with_align(Align::Center);
-		ux_exterior_flex.add(&ux_brush_size_label);
+		ux_interior_flex_3.add(&ux_brush_size_label);
+		ux_interior_flex_3.fixed(&ux_brush_size_label, 120);
 
 		let mut ux_brush_size_counter = Counter::default()
 			.with_pos(ux_brush_size_label.x(), ux_brush_size_label.y() + ux_brush_size_label.height())
@@ -383,7 +397,7 @@ impl RoomGenGroup {
 		ux_brush_size_counter.set_precision(0);
 		ux_brush_size_counter.set_step(1.0, 2);
 		ux_brush_size_counter.set_type(CounterType::Simple);
-		ux_exterior_flex.add(&ux_brush_size_counter);
+		ux_interior_flex_3.add(&ux_brush_size_counter);
 
 		// set handler for the brush size counter, in order to update self.ux_cave_canvas_brush_size
 		ux_brush_size_counter.handle({
@@ -405,93 +419,79 @@ impl RoomGenGroup {
 		});
 
 		// update state of draw_state
-		self.ux_draw_state = Rc::from(RefCell::from(DrawState::Wall));
+		self.ux_draw_state = Rc::from(RefCell::from(DrawState::Disabled));
+		self.ux_draw_frame_ref = Rc::from(RefCell::from(ux_draw_activation_frame));
 
 		// set handlers for all the buttons
-		self.ux_wall_frame_ref = Rc::from(RefCell::from(ux_wall_activation_frame));
-		self.ux_floor_frame_ref = Rc::from(RefCell::from(ux_floor_activation_frame));
-		self.ux_stair_frame_ref = Rc::from(RefCell::from(ux_stair_activation_frame));
-		let wall_frame_ref = &self.ux_wall_frame_ref; //Rc::from(RefCell::from(ux_wall_activation_frame));
-		let floor_frame_ref = &self.ux_floor_frame_ref; //Rc::from(RefCell::from(ux_floor_activation_frame));
-		let stairs_frame_ref = &self.ux_stair_frame_ref; //Rc::from(RefCell::from(ux_stair_activation_frame));
+		let draw_frame_ref = &self.ux_draw_frame_ref;
+		let draw_state_ref = &self.ux_draw_state;
 
-		ux_draw_wall_btn.handle({
-			let draw_state = self.ux_draw_state.clone();
-			let wall_frame_ref = wall_frame_ref.clone();
-			let floor_frame_ref = floor_frame_ref.clone();
-			let stairs_frame_ref = stairs_frame_ref.clone();
-			move |_b, ev| {
-				let mut draw_state = draw_state.as_ref().borrow_mut();
-				let mut wall_frame_ref = wall_frame_ref.as_ref().borrow_mut();
-				let mut floor_frame_ref = floor_frame_ref.as_ref().borrow_mut();
-				let mut stairs_frame_ref = stairs_frame_ref.as_ref().borrow_mut();
-				match ev {
-					Event::Push => {
-						*draw_state = DrawState::Wall;
-						wall_frame_ref.set_label("Activated");
-						wall_frame_ref.set_color(Color::DarkGreen);
-						floor_frame_ref.set_label("Disabled");
-						floor_frame_ref.set_color(Color::Red);
-						stairs_frame_ref.set_label("Disabled");
-						stairs_frame_ref.set_color(Color::Red);
-						true
-					}
-					_ => false
-				}
-			}
+		ux_draw_doors_btn.set_callback({
+			let draw_frame_ref = draw_frame_ref.clone();
+			let draw_state_ref = draw_state_ref.clone();
+			move |_| {
+				let mut draw_state_ref = draw_state_ref.as_ref().borrow_mut();
+				let mut draw_frame_ref = draw_frame_ref.as_ref().borrow_mut();
+				*draw_state_ref = DrawState::Door;
+				draw_frame_ref.set_label("Draw Doors");
+			}//end closure
 		});
 
-		ux_draw_floor_btn.handle({
-			let draw_state = self.ux_draw_state.clone();
-			let wall_frame_ref = wall_frame_ref.clone();
-			let floor_frame_ref = floor_frame_ref.clone();
-			let stairs_frame_ref = stairs_frame_ref.clone();
-			move |_b, ev| {
-				let mut draw_state = draw_state.as_ref().borrow_mut();
-				let mut wall_frame_ref = wall_frame_ref.as_ref().borrow_mut();
-				let mut floor_frame_ref = floor_frame_ref.as_ref().borrow_mut();
-				let mut stairs_frame_ref = stairs_frame_ref.as_ref().borrow_mut();
-				match ev {
-					Event::Push => {
-						*draw_state = DrawState::Floor;
-						wall_frame_ref.set_label("Disabled");
-						wall_frame_ref.set_color(Color::Red);
-						floor_frame_ref.set_label("Activated");
-						floor_frame_ref.set_color(Color::DarkGreen);
-						stairs_frame_ref.set_label("Disabled");
-						stairs_frame_ref.set_color(Color::Red);
-						true
-					}
-					_ => false
-				}
-			}
+		ux_draw_empty_btn.set_callback({
+			let draw_frame_ref = draw_frame_ref.clone();
+			let draw_state_ref = draw_state_ref.clone();
+			move |_| {
+				let mut draw_state_ref = draw_state_ref.as_ref().borrow_mut();
+				let mut draw_frame_ref = draw_frame_ref.as_ref().borrow_mut();
+				*draw_state_ref = DrawState::Empty;
+				draw_frame_ref.set_label("Draw Empty Space");
+			}//end closure
 		});
 
-		ux_draw_stairs_btn.handle({
-			let draw_state = self.ux_draw_state.clone();
-			let wall_frame_ref = wall_frame_ref.clone();
-			let floor_frame_ref = floor_frame_ref.clone();
-			let stairs_frame_ref = stairs_frame_ref.clone();
-			move |_b, ev| {
-				let mut draw_state = draw_state.as_ref().borrow_mut();
-				let mut wall_frame_ref = wall_frame_ref.as_ref().borrow_mut();
-				let mut floor_frame_ref = floor_frame_ref.as_ref().borrow_mut();
-				let mut stairs_frame_ref = stairs_frame_ref.as_ref().borrow_mut();
-				match ev {
-					Event::Push => {
-						*draw_state = DrawState::Stair;
-						wall_frame_ref.set_label("Disabled");
-						wall_frame_ref.set_color(Color::Red);
-						floor_frame_ref.set_label("Disabled");
-						floor_frame_ref.set_color(Color::Red);
-						stairs_frame_ref.set_label("Activated");
-						stairs_frame_ref.set_color(Color::DarkGreen);
-						true
-					}
-					_ => false
-				}
-			}
+		ux_draw_floor_btn.set_callback({
+			let draw_frame_ref = draw_frame_ref.clone();
+			let draw_state_ref = draw_state_ref.clone();
+			move |_| {
+				let mut draw_state_ref = draw_state_ref.as_ref().borrow_mut();
+				let mut draw_frame_ref = draw_frame_ref.as_ref().borrow_mut();
+				*draw_state_ref = DrawState::Floor;
+				draw_frame_ref.set_label("Draw Floor");
+			}//end closure
 		});
+
+		ux_draw_room_start_btn.set_callback({
+			let draw_frame_ref = draw_frame_ref.clone();
+			let draw_state_ref = draw_state_ref.clone();
+			move |_| {
+				let mut draw_state_ref = draw_state_ref.as_ref().borrow_mut();
+				let mut draw_frame_ref = draw_frame_ref.as_ref().borrow_mut();
+				*draw_state_ref = DrawState::RoomStart;
+				draw_frame_ref.set_label("Draw Room Starts");
+			}//end closure
+		});
+
+		ux_draw_stairs_btn.set_callback({
+			let draw_frame_ref = draw_frame_ref.clone();
+			let draw_state_ref = draw_state_ref.clone();
+			move |_| {
+				let mut draw_state_ref = draw_state_ref.as_ref().borrow_mut();
+				let mut draw_frame_ref = draw_frame_ref.as_ref().borrow_mut();
+				*draw_state_ref = DrawState::Stair;
+				draw_frame_ref.set_label("Draw Stairs");
+			}//end closure
+		});
+
+		ux_draw_wall_btn.set_callback({
+			let draw_frame_ref = draw_frame_ref.clone();
+			let draw_state_ref = draw_state_ref.clone();
+			move |_| {
+				let mut draw_state_ref = draw_state_ref.as_ref().borrow_mut();
+				let mut draw_frame_ref = draw_frame_ref.as_ref().borrow_mut();
+				*draw_state_ref = DrawState::Wall;
+				draw_frame_ref.set_label("Draw Walls");
+			}//end closure
+		});
+
 	}
 
 	fn initialize_build_gen_controls(&mut self, ux_exterior_flex: &mut Flex, msg_sender: &Sender<String>) {
@@ -682,14 +682,17 @@ impl RoomGenGroup {
 				let draw_state = {draw_state.as_ref().borrow().clone()};
 				let draw_color = match draw_state {
 					DrawState::Wall => Color::Black,
-					DrawState::Floor => Color::White,
+					DrawState::Floor => Color::Light1,
 					DrawState::Stair => Color::Green,
+					DrawState::Empty => Color::White,
+					DrawState::Door => Color::Blue,
+					DrawState::RoomStart => Color::Red,
 					DrawState::Disabled => Color::White,
 				};
 				let draw_size = match draw_state {
-					DrawState::Wall | DrawState::Floor => pixel_scale * brush_size,
 					DrawState::Stair => pixel_scale,
 					DrawState::Disabled => 0,
+					_ => pixel_scale * brush_size,
 				};
 				match ev {
 					Event::Push => {
@@ -722,7 +725,7 @@ impl RoomGenGroup {
 						let pixel_scale = pixel_scale as usize;
 						let mut last_square_grid = last_square_grid.as_ref().borrow_mut();
 						let mut stairs_list = stairs_list.as_ref().borrow_mut();
-						if let Some(squares) = ux_squareularize_canvas(&surface, Some(&CAC::colors_vec()), &pixel_scale, &sub_pixel_scale) {
+						if let Some(squares) = ux_squareularize_canvas(&surface, Some(&DrawState::get_color_vec_u8()), &pixel_scale, &sub_pixel_scale) {
 							let stair_vec = Self::ux_get_stair_coord_list(&squares);
 							Self::ux_update_stairs_list(stair_vec, &mut stairs_list);
 							*last_square_grid = Some(squares);
