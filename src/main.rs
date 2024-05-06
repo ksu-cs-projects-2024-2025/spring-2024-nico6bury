@@ -1,6 +1,6 @@
 
 use gui::GUI;
-use nice_map_generator::{cellular_automata::CA, export};
+use nice_map_generator::{cellular_automata::CA, export, room_growth::CRG};
 
 mod gui;
 
@@ -102,6 +102,28 @@ fn main() {
                             }//end matching user choice
                         }//end if we have a file path to save to
                     }//end if user is deciding between cave and room map to save
+                },
+                "RoomGen:RoomStarts" | "RoomGen:InitialGrowth" | "RoomGen:LGrowth" | "RoomGen:Connectivity" => {
+                    match gui.get_room_canvas_squareularization() {
+                        Some(squares) => {
+                            let mut rg = CRG::default().with_squares(squares);
+                            let proc_res = match val.as_str() {
+                                "RoomGen:RoomStarts" => rg.add_random_room_starts(None),
+                                "RoomGen:InitialGrowth" => rg.grow_rooms_from_starts(),
+                                "RoomGen:LGrowth" => rg.grow_rooms_l_growth(),
+                                "RoomGen:Connectivity" => rg.enforce_connectivity(5),
+                                _ => Err(format!("Unrecognized command/message {}", val))
+                            };
+                            match proc_res {
+                                Ok(_) => {
+                                    match rg.get_squares() {
+                                        Some(squares) => gui.set_room_canvas_squareularization(squares),
+                                        None => println!("Couldn't get room squares back from constrained_room_growth???"),
+                                    }//end matching whether we can get squares from rg
+                                }, Err(msg) => GUI::alert(&format!("Error message:\n{}", msg))
+                            }//end matching result of process
+                        }, None => println!("Couldn't get room canvas for some reason."),
+                    }//end matching whether we could get the room canvas
                 },
                 _ => {
                     println!("Value not recognized: {}", val);

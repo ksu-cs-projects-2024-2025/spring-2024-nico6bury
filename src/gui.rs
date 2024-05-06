@@ -338,6 +338,10 @@ impl GUI {
 		self.ux_cave_gen_tab.set_squareularization(squares);
 	}//end set_cave_canvas_squareularization(self, square_info)
 
+	pub fn set_room_canvas_squareularization(&mut self, squares: &SquareGrid) {
+		self.ux_room_gen_tab.set_squareularization(squares);
+	}//end set_room_canvas_squareularization
+
 	/// Returns neighborhood size, neighborhood threshold, and generations to run from cave canvas group
 	pub fn get_cave_canvas_ca_settings(&self) -> (usize,usize,usize) {
 		self.ux_cave_gen_tab.get_cave_canvas_ca_settings()
@@ -373,6 +377,12 @@ impl GUI {
 	pub fn message(text: &str) {
 		dialog::message(0, 0, text);
 	}//end message(text)
+
+	/// Displays an alert box/error message to the user.
+	pub fn alert(text: &str) {
+		dialog::beep(dialog::BeepType::Error);
+		dialog::alert_default(text);
+	}//end alert(text)
 
 	/// Displays dialog for getting a user to give a path where they'll save an image.
 	pub fn save_img_dialog(file_extension: &str) -> Option<PathBuf> {

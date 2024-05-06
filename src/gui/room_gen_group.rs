@@ -3,7 +3,7 @@ use std::{cell::RefCell, rc::Rc};
 use fltk::{app::{self, Sender}, button::Button, dialog, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
 use nice_map_generator::squares::SquareGrid;
 
-use super::gui_utils::{get_default_tab_padding, squareularization_color_square, ux_squareularize_canvas, ListBox, SquareStairDisplay};
+use super::gui_utils::{get_default_tab_padding, squareularization_color_square, squareularization_color_squares, ux_squareularize_canvas, ListBox, SquareStairDisplay};
 
 
 /// # enum DrawState
@@ -631,9 +631,18 @@ impl RoomGenGroup {
 		draw_rect_fill(0,0,self.ux_canvas_frame.width(), self.ux_canvas_frame.height(), Color::White);
 		ImageSurface::pop_current();
 
-		self.ux_canvas_image = Rc::from(RefCell::from(canvas_surface));
-
 		let pixel_scale = self.ux_squares_pixel_diameter_counter.value() as i32;
+		self.ux_last_square_grid = Rc::from(RefCell::from(
+			ux_squareularize_canvas(
+				&canvas_surface,
+				Some(&DrawState::get_color_vec_u8()),
+				&(pixel_scale as usize),
+				&(self.ux_sub_pixel_scale as usize)
+			)
+		));
+		
+		self.ux_canvas_image = Rc::from(RefCell::from(canvas_surface));
+		
 		let pixel_scale_ref = Rc::from(RefCell::from(pixel_scale));
 		let sub_pixel_scale = Rc::from(RefCell::from(self.ux_sub_pixel_scale));
 		let brush_size_ref = &self.ux_brush_size;
@@ -641,6 +650,7 @@ impl RoomGenGroup {
 		let surface_ref = &self.ux_canvas_image;
 		let stairs_list_ref = &self.ux_stairs_list;
 		let last_square_grid_ref = &self.ux_last_square_grid;
+
 
 		self.ux_canvas_frame.draw({
 			let surface = surface_ref.clone();
@@ -815,6 +825,21 @@ impl RoomGenGroup {
 			}, Err(_) => None,
 		}//end matching last_squares borrow
 	}//end get_last_squareularization(self)
+
+	pub fn set_squareularization(&mut self, squares: &SquareGrid) {
+		let canvas_ref = &self.ux_canvas_image;
+		let canvas_ref_clone = canvas_ref.clone();
+		let canvas_borrow = canvas_ref_clone.as_ref().borrow();
+
+		squareularization_color_squares(&canvas_borrow, squares, &false);
+		self.ux_canvas_frame.redraw();
+
+		let stairs = Self::ux_get_stair_coord_list(squares);
+		let stair_lb_ref = &self.ux_stairs_list;
+		let stair_lb_ref_clone = stair_lb_ref.clone();
+		let mut stair_lb_borrow = stair_lb_ref_clone.as_ref().borrow_mut();
+		Self::ux_update_stairs_list(stairs, &mut stair_lb_borrow)
+	}//end set_squareularization(self, squares)
 
 }//end impl for RoomGenGroup
 
