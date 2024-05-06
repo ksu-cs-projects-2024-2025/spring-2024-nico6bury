@@ -28,7 +28,7 @@ fn main() {
                     gui.update_cave_canvas();
                     println!("Told cave canvas to update");
                 },
-                "BuildGen:Canvas:Update" => {
+                "RoomGen:Canvas:Update" => {
                     gui.update_room_canvas();
                     println!("Told build canvas to update");
                 },

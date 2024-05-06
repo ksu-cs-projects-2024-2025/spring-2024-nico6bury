@@ -35,7 +35,7 @@ pub struct RoomGenGroup {
 	ux_wall_frame_ref: Rc<RefCell<Frame>>,
 	ux_floor_frame_ref: Rc<RefCell<Frame>>,
 	ux_stair_frame_ref: Rc<RefCell<Frame>>,
-}//end struct BuildGenGroup
+}//end struct RoomGenGroup
 
 impl Default for RoomGenGroup {
 	fn default() -> Self {
@@ -286,7 +286,7 @@ impl RoomGenGroup {
 			.with_label("Clear Canvas and Update Size/Scale");
 		ux_exterior_flex.add(&ux_update_canvas_button);
 		// TODO: Rework this to activate entirely within this file and remove need for msg_sender for this functionallity
-		ux_update_canvas_button.emit(msg_sender.clone(), "BuildGen:Canvas:Update".to_string());
+		ux_update_canvas_button.emit(msg_sender.clone(), "RoomGen:Canvas:Update".to_string());
 
 		// update cave canvas frame based on default values in Counters
 		let new_width = self.ux_squares_width_counter.value() * self.ux_squares_pixel_diameter_counter.value();
@@ -510,37 +510,70 @@ impl RoomGenGroup {
 		ux_exterior_flex.add(&ux_interior_flex_3);
 
 		// add room starts controls
-		let ux_room_start_help_btn = Button::default()
+		let mut ux_room_start_help_btn = Button::default()
 			.with_label("Help");
 		ux_interior_flex_1.add(&ux_room_start_help_btn);
 		ux_interior_flex_1.fixed(&ux_room_start_help_btn, 70);
+		ux_room_start_help_btn.handle({
+			move |_, ev| {
+				match ev {
+					Event::Released => {
+						dialog::message_default("Help dialog test for room starts.");
+						true
+					},
+					_ => false,
+				}//end matching events
+			}//end closure
+		});
 
 		let mut ux_room_start_place_btn = Button::default()
 			.with_label("Place Room Starts");
-		ux_room_start_place_btn.emit(msg_sender.clone(), String::from("BuildGen:RoomStarts"));
+		ux_room_start_place_btn.emit(msg_sender.clone(), String::from("RoomGen:RoomStarts"));
 		ux_interior_flex_1.add(&ux_room_start_place_btn);
 
 		// add constrained room growth controls
-		let ux_room_growth_help_btn = Button::default()
+		let mut ux_room_growth_help_btn = Button::default()
 			.with_label("Help");
 		ux_interior_flex_2.add(&ux_room_growth_help_btn);
 		ux_interior_flex_2.fixed(&ux_room_growth_help_btn, 70);
+		ux_room_growth_help_btn.handle({
+			move |_, ev| {
+				match ev {
+					Event::Released => {
+						dialog::message_default("Help dialog test for constrained growth of rooms.");
+						true
+					},
+					_ => false
+				}//end matching events
+			}//end closure
+		});
 
 		let mut ux_room_growth_start_btn = Button::default()
 			.with_label("Constrained Growth");
-		ux_room_growth_start_btn.emit(msg_sender.clone(), String::from("BuildGen:ConstrainedGrowth"));
+		ux_room_growth_start_btn.emit(msg_sender.clone(), String::from("RoomGen:ConstrainedGrowth"));
 		ux_interior_flex_2.add(&ux_room_growth_start_btn);
 
 		// add connectivity controls
 		let mut ux_connectivity_btn = Button::default()
 			.with_label("Connectivity");
-		ux_connectivity_btn.emit(msg_sender.clone(), String::from("BuildGen:Connectivity"));
+		ux_connectivity_btn.emit(msg_sender.clone(), String::from("RoomGen:Connectivity"));
 		ux_interior_flex_3.add(&ux_connectivity_btn);
 
-		let ux_connectivity_help_btn = Button::default()
+		let mut ux_connectivity_help_btn = Button::default()
 			.with_label("Help");
 		ux_interior_flex_3.add(&ux_connectivity_help_btn);
 		ux_interior_flex_3.fixed(&ux_connectivity_help_btn, 70);
+		ux_connectivity_help_btn.handle({
+			move |_, ev| {
+				match ev {
+					Event::Released => {
+						dialog::message_default("Help dialog test for connectivity settings.");
+						true
+					},
+					_ => false,
+				}//end matching events
+			}//end closure
+		});
 
 		let mut ux_connectivity_limit_counter = Counter::default()
 			.with_type(CounterType::Simple);
@@ -596,7 +629,7 @@ impl RoomGenGroup {
 			.with_label("Remove Level Connection");
 		ux_exterior_flex.add(&ux_level_connection_remove_btn);
 
-		ux_level_connection_remove_btn.emit(msg_sender.clone(), String::from("BuildGen:Stairs:Remove"));
+		ux_level_connection_remove_btn.emit(msg_sender.clone(), String::from("RoomGen:Stairs:Remove"));
 
 		ux_exterior_flex.fixed(&ux_level_connection_settings_section_label, 50);
 		ux_exterior_flex.fixed(&ux_level_connection_add_btn, 50);
@@ -751,7 +784,7 @@ impl RoomGenGroup {
 				for selected_element in stairs_list_selected_elements {
 					match squares.get_mut(&selected_element.row_idx, &selected_element.col_idx) {
 						Some(this_square) => {
-							this_square.set_color((0,0,0));
+							this_square.set_color((255,255,255));
 							squares_to_recolor.push(this_square.clone());
 						},
 						None => println!("Couldn't access square {:?} while removing stairs from list.", selected_element)
@@ -781,8 +814,6 @@ impl RoomGenGroup {
 		stair_list_borrow.clear_elements();
 		self.update_image_size_and_drawing();
 	}//end update_canvas
-
-
 
 }//end impl for RoomGenGroup
 
