@@ -827,6 +827,7 @@ impl RoomGenGroup {
 	}//end get_last_squareularization(self)
 
 	pub fn set_squareularization(&mut self, squares: &SquareGrid) {
+		// draw updates on canvas
 		let canvas_ref = &self.ux_canvas_image;
 		let canvas_ref_clone = canvas_ref.clone();
 		let canvas_borrow = canvas_ref_clone.as_ref().borrow();
@@ -834,11 +835,18 @@ impl RoomGenGroup {
 		squareularization_color_squares(&canvas_borrow, squares, &false);
 		self.ux_canvas_frame.redraw();
 
+		// update list of stairs
 		let stairs = Self::ux_get_stair_coord_list(squares);
 		let stair_lb_ref = &self.ux_stairs_list;
 		let stair_lb_ref_clone = stair_lb_ref.clone();
 		let mut stair_lb_borrow = stair_lb_ref_clone.as_ref().borrow_mut();
-		Self::ux_update_stairs_list(stairs, &mut stair_lb_borrow)
+		Self::ux_update_stairs_list(stairs, &mut stair_lb_borrow);
+
+		// update last_squareularization
+		let last_squares = &self.ux_last_square_grid;
+		let last_squares = last_squares.clone();
+		let mut last_squares = last_squares.borrow_mut();
+		*last_squares = Some(squares.clone());
 	}//end set_squareularization(self, squares)
 
 }//end impl for RoomGenGroup
