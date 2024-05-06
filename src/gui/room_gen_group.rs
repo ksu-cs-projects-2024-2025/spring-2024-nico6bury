@@ -628,7 +628,7 @@ impl RoomGenGroup {
 		let canvas_surface = ImageSurface::new(self.ux_canvas_frame.width(), self.ux_canvas_frame.height(), false);
 
 		ImageSurface::push_current(&canvas_surface);
-		draw_rect_fill(0,0,self.ux_canvas_frame.width(), self.ux_canvas_frame.height(), Color::Light1);
+		draw_rect_fill(0,0,self.ux_canvas_frame.width(), self.ux_canvas_frame.height(), Color::White);
 		ImageSurface::pop_current();
 
 		let pixel_scale = self.ux_squares_pixel_diameter_counter.value() as i32;
