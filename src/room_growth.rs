@@ -1,3 +1,5 @@
+use rand::{prelude::SliceRandom, rngs::ThreadRng, Rng};
+
 use crate::squares::SquareGrid;
 
 
@@ -5,12 +7,14 @@ use crate::squares::SquareGrid;
 /// Constrained Room Growth
 pub struct CRG {
 	squares: Option<SquareGrid>,
+	rng: ThreadRng,
 }//end struct CRG
 
 impl Default for CRG {
 	fn default() -> Self {
 		Self {
 			squares: None,
+			rng: rand::thread_rng(),
 		}//end struct construction
 	}//end default()
 }//end impl Default for CRG
@@ -36,7 +40,49 @@ impl CRG {
 	/// Optionally, you can specify the number of starts to be produced.
 	/// If rooms is None, then a random number of room starts will be generated.
 	pub fn add_random_room_starts(&mut self, rooms: Option<usize>) -> Result<(),String> {
-		Err(format!("Not implemented yet."))
+		match &mut self.squares {
+			Some(squares) => {
+				let room_num = match rooms {
+					Some(r) => r,
+					None => {
+						let row_col_avg = squares.rows() + squares.cols() / 2;
+						let r_min = 0.max(row_col_avg / 4);
+						let r_max = row_col_avg;
+						self.rng.gen_range(r_min..=r_max)
+					}};
+				
+				// get list of possible squares to generate room_starts on
+				let empty_list = {
+					let mut empt_sqr_vec = Vec::new();
+					for col in 0..*squares.cols() {
+						for row in 0..*squares.rows() {
+							match squares.get(&row,&col) {
+								Some(sqr) => {
+									match CRGC::classify(*sqr.color()) {
+										CRGC::Empty => empt_sqr_vec.push((row,col)),
+										_ => (),
+									}//end matching color class
+								}, None => println!("Couldn't access square at row:{} and col:{} while placing random starts", row, col)
+							}//end matching whether we got the square
+						}//end looping over row indices
+					}//end looping over col indices
+					empt_sqr_vec
+				};
+
+				// check that we have enough empty spaces for all room starts
+				if empty_list.len() < room_num { return Err(format!("Room starts cannot be placed because we want to add {} starts, but starts can only be places on Empty squares, and there are only {} Empty squares!", room_num, empty_list.len())) }
+
+				// randomly get [room_num] indices from empty_list
+				for (row,col) in empty_list.choose_multiple(&mut self.rng, room_num) {
+					match squares.get_mut(row, col) {
+						Some(square) => square.set_color(CRGC::RoomStart.color()),
+						None => println!("Couldn't get square at row:{} and col:{} for some reason.", row, col),
+					}//end matching whether we can access the square to set color
+				}//end looping over row and column indices to place a room start
+				
+				Ok(())
+			}, None => Err(format!("Could not add random starts to squares because squares is None."))
+		}//end matching whether we can access squares
 	}//end add_random_room_starts(self, rooms)
 
 	/// Grows rooms from room starts in squares.  
