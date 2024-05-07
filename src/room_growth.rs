@@ -193,6 +193,44 @@ impl CRG {
 		}//end matching whether we have squares
 	}//end grow_rooms_from_starts(self)
 
+	pub fn place_random_doors(&mut self, base_p: f64) -> Result<(), String> {
+		match &mut self.squares {
+			Some(squares) => {
+				for row in 0..*squares.rows() {
+					for col in 0..*squares.cols() {
+						if let Some(wall_square) = squares.get(&row, &col) {
+							if CRGC::classify(*wall_square.color()) == CRGC::Wall {
+								let adjacent_squares = {
+									let mut squr_vec = Vec::new();
+									for row_a in row.checked_sub(1).unwrap_or(row)..(row + 1).min(squares.rows() - 1) {
+										for col_a in col.checked_sub(1).unwrap_or(col)..(col + 1).min(squares.cols() - 1) {
+											if row != row_a || col != col_a {
+												match squares.get(&row_a, &col_a) {
+													Some(square_a) => squr_vec.push(square_a),
+													None => println!("Couldn't access square at row:{}, col:{}", row, col)
+												}
+											}//end if this isn't the same as row, col
+										}//end looping over possible adjacent col vals
+									}//end looping over possible adjacent row vals
+									squr_vec
+								};//end getting vec of adjacent squares
+	
+								let adjacent_floors = adjacent_squares.iter().filter(|elem| CRGC::classify(*elem.color()) == CRGC::Floor).count();
+								let make_door = self.rng.gen_bool(base_p * adjacent_floors as f64);
+								if make_door {
+									let wall_square = squares.get_mut(&row,&col).unwrap();
+									wall_square.set_color(CRGC::Door.color())
+								}//end if we are going to make a door
+							}//end if we found a wall
+						}//end if we can get the square here
+					}//end looping over cols
+				}//end looping over rows
+
+				Ok(())
+			}, None => Err(format!("No Squares Set"))
+		}//end matching whether we have squares
+	}//end place_random_doors
+
 	/// Grows rooms in l shapes after they've been expanded
 	/// from starts.
 	/// 

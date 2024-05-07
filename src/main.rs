@@ -109,7 +109,11 @@ fn main() {
                             let mut rg = CRG::default().with_squares(squares);
                             let proc_res = match val.as_str() {
                                 "RoomGen:RoomStarts" => rg.add_random_room_starts(None),
-                                "RoomGen:InitialGrowth" => rg.grow_rooms_from_starts(),
+                                "RoomGen:InitialGrowth" => {
+                                    match rg.grow_rooms_from_starts(){
+                                        Ok(_) => rg.place_random_doors(0.02),
+                                        Err(er) => Err(er),
+                                    }},
                                 "RoomGen:LGrowth" => rg.grow_rooms_l_growth(),
                                 "RoomGen:Connectivity" => rg.enforce_connectivity(5),
                                 _ => Err(format!("Unrecognized command/message {}", val))
