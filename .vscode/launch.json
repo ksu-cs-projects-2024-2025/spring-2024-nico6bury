@@ -7,15 +7,15 @@
 		{
 			"type": "lldb",
 			"request": "launch",
-			"name": "Debug executable 'spring-2024-nico6bury'",
+			"name": "Debug executable 'nice-map-generator'",
 			"cargo": {
 				"args": [
 					"build",
-					"--bin=spring-2024-nico6bury",
-					"--package=spring-2024-nico6bury"
+					"--bin=nice-map-generator",
+					"--package=nice-map-generator"
 				],
 				"filter": {
-					"name": "spring-2024-nico6bury",
+					"name": "nice-map-generator",
 					"kind": "bin"
 				}
 			},
@@ -25,16 +25,16 @@
 		{
 			"type": "lldb",
 			"request": "launch",
-			"name": "Debug unit tests in executable 'spring-2024-nico6bury'",
+			"name": "Debug unit tests in executable 'nice-map-generator'",
 			"cargo": {
 				"args": [
 					"test",
 					"--no-run",
-					"--bin=spring-2024-nico6bury",
-					"--package=spring-2024-nico6bury"
+					"--bin=nice-map-generator",
+					"--package=nice-map-generator"
 				],
 				"filter": {
-					"name": "spring-2024-nico6bury",
+					"name": "nice-map-generator",
 					"kind": "bin"
 				}
 			},

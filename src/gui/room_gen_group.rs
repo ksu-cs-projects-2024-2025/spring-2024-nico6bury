@@ -27,7 +27,7 @@ impl DrawState {
 		color_vec.push(Color::Black);
 		color_vec.push(Color::White);
 		color_vec.push(Color::Green);
-		color_vec.push(Color::Light1);
+		color_vec.push(Color::from_rgb(140, 140, 140));
 		color_vec
 	}
 	
@@ -288,7 +288,7 @@ impl RoomGenGroup {
 			.with_align(Align::TopLeft);
 		self.ux_squares_pixel_diameter_counter.set_value(4.0);
 		self.ux_squares_pixel_diameter_counter.set_minimum(1.0);
-		self.ux_squares_pixel_diameter_counter.set_maximum(30.0);
+		self.ux_squares_pixel_diameter_counter.set_maximum(500.0);
 		self.ux_squares_pixel_diameter_counter.set_precision(0);
 		self.ux_squares_pixel_diameter_counter.set_step(1.0, 10);
 		self.ux_squares_pixel_diameter_counter.set_type(CounterType::Simple);
@@ -363,7 +363,7 @@ impl RoomGenGroup {
 
 		let mut ux_draw_floor_btn = Button::default()
 			.with_label("Floor");
-		ux_draw_floor_btn.set_color(Color::Light1);
+		ux_draw_floor_btn.set_color(Color::from_rgb(140,140,140));
 		ux_interior_flex_2.add(&ux_draw_floor_btn);
 
 		let mut ux_draw_stairs_btn = Button::default()
@@ -679,7 +679,7 @@ impl RoomGenGroup {
 				let draw_state = {draw_state.as_ref().borrow().clone()};
 				let draw_color = match draw_state {
 					DrawState::Wall => Color::Black,
-					DrawState::Floor => Color::Light1,
+					DrawState::Floor => Color::from_rgb(140,140,140),
 					DrawState::Stair => Color::Green,
 					DrawState::Empty => Color::White,
 					DrawState::Door => Color::Blue,
