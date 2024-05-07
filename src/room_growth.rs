@@ -1,4 +1,3 @@
-use fltk::enums::Color;
 use rand::{prelude::SliceRandom, rngs::ThreadRng, Rng};
 
 use crate::squares::SquareGrid;
@@ -128,7 +127,7 @@ impl CRG {
 							match squares.get(&row, &col) {
 								Some(square) => {
 									if CRGC::classify(*square.color()) == CRGC::RoomStart {
-										room_starts.push(Room::from_square_coord(col, row, room_starts.len()));
+										room_starts.push(RoomFromStart::from_square_coord(col, row, room_starts.len()));
 									}//end if we found a room start
 								}, None => println!("Couldn't get square at row:{}, col:{}", row, col)
 							}//end matching whether we can acces square
@@ -144,7 +143,7 @@ impl CRG {
 					let mut all_claims = Vec::new();
 					for room in room_starts.iter().filter(|elem| elem.allowed_growth) {
 						let corner_claims = room.get_corner_coords(squares.cols() - 1, squares.rows() - 1);
-						for claim in Room::corner_coords_to_square(&corner_claims, room.index) {
+						for claim in RoomFromStart::corner_coords_to_square(&corner_claims, room.index) {
 							SquareClaim::update_claims(claim.x, claim.y, &mut all_claims, room.index);
 						}//end looping over claims on corner coordinates
 					}//end looping over each room
@@ -189,7 +188,7 @@ impl CRG {
 					
 					// paint borders of rooms as walls
 					{let border_coords = 
-						Room::corner_coords_to_square(&room.get_corner_coords(squares.cols() - 1, squares.rows() - 1), room.index);
+						RoomFromStart::corner_coords_to_square(&room.get_corner_coords(squares.cols() - 1, squares.rows() - 1), room.index);
 						for (row,col) in border_coords.iter().map(|elem| (elem.y, elem.x)) {
 							match squares_clone.get_mut(&row, &col) {
 								Some(square) => {
@@ -245,8 +244,10 @@ impl CRG {
 	}//end enforce connectivity(self, min_connectivity)
 }//end impl for CRG
 
+/// Struct to hold some information about rectangular rooms,
+/// used as helper struct when growing rooms from RoomStarts.
 #[derive(Clone, Copy, Debug, PartialOrd)]
-struct Room {
+struct RoomFromStart {
 	x: usize,
 	y: usize,
 	w: usize,
@@ -257,15 +258,15 @@ struct Room {
 	allowed_growth: bool,
 }//end struct Room
 
-impl PartialEq for Room {
+impl PartialEq for RoomFromStart {
 	fn eq(&self, other: &Self) -> bool {
 		self.init_x == other.init_x && self.init_y == other.init_y
 	}//end eq
 }//end impl PartialEq for Room
 
-impl Room {
-	fn from_square_coord(x: usize, y: usize, index: usize) -> Room {
-		Room { x, y, w: 1, h: 1, index, init_x: x, init_y: y, allowed_growth: true }
+impl RoomFromStart {
+	fn from_square_coord(x: usize, y: usize, index: usize) -> RoomFromStart {
+		RoomFromStart { x, y, w: 1, h: 1, index, init_x: x, init_y: y, allowed_growth: true }
 	}//end from_square_coord(x,y)
 	
 	/// Returns coords of four adjacent corners.  
@@ -363,7 +364,7 @@ impl SquareClaim {
 
 /// Constrained Room Growth Classification (based on Color)
 #[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Hash)]
-enum CRGC {
+pub enum CRGC {
 	Door,
 	Empty,
 	Floor,

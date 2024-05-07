@@ -1,7 +1,7 @@
 use std::{cell::RefCell, rc::Rc};
 
 use fltk::{app::{self, Sender}, button::Button, dialog, draw::{draw_line, draw_point, draw_rect_fill, set_draw_color, set_line_style, LineStyle}, enums::{Align, Color, Event, FrameType}, frame::Frame, group::{Flex, FlexType, Group, Scroll, Tile}, prelude::{DisplayExt, GroupExt, ImageExt, SurfaceDevice, ValuatorExt, WidgetBase, WidgetExt}, surface::ImageSurface, text::{TextBuffer, TextDisplay, TextEditor}, valuator::{Counter, CounterType}, widget_extends};
-use nice_map_generator::squares::SquareGrid;
+use nice_map_generator::{room_growth::CRGC, squares::SquareGrid};
 
 use super::gui_utils::{get_default_tab_padding, squareularization_color_square, squareularization_color_squares, ux_squareularize_canvas, ListBox, SquareStairDisplay};
 
@@ -20,20 +20,28 @@ enum DrawState {
 }//end enum DrawState
 
 impl DrawState {
-	fn get_color_vec() -> Vec<Color> {
-		let mut color_vec = Vec::new();
-		color_vec.push(Color::Red);
-		color_vec.push(Color::Blue);
-		color_vec.push(Color::Black);
-		color_vec.push(Color::White);
-		color_vec.push(Color::Green);
-		color_vec.push(Color::from_rgb(140, 140, 140));
-		color_vec
-	}
-	
+	fn color(&self) -> Color {
+		match self {
+			DrawState::Wall => Color::from_rgb(CRGC::Wall.color().0,CRGC::Wall.color().1,CRGC::Wall.color().2),
+			DrawState::Floor => Color::from_rgb(CRGC::Floor.color().0,CRGC::Floor.color().1,CRGC::Floor.color().2),
+			DrawState::Stair => Color::from_rgb(CRGC::Stairs.color().0,CRGC::Stairs.color().1,CRGC::Stairs.color().2),
+			DrawState::Empty => Color::from_rgb(CRGC::Empty.color().0,CRGC::Empty.color().1,CRGC::Empty.color().2),
+			DrawState::Door => Color::from_rgb(CRGC::Door.color().0,CRGC::Door.color().1,CRGC::Door.color().2),
+			DrawState::RoomStart => Color::from_rgb(CRGC::RoomStart.color().0,CRGC::RoomStart.color().1,CRGC::RoomStart.color().2),
+			DrawState::Disabled => Color::White,
+		}//end matching self
+	}//end color()
+
 	fn get_color_vec_u8() -> Vec<(u8,u8,u8)> {
-		DrawState::get_color_vec().iter().map(|elem| elem.to_rgb()).collect()
-	}
+		let mut color_vec = Vec::new();
+		color_vec.push(CRGC::Door.color());
+		color_vec.push(CRGC::Empty.color());
+		color_vec.push(CRGC::Floor.color());
+		color_vec.push(CRGC::RoomStart.color());
+		color_vec.push(CRGC::Stairs.color());
+		color_vec.push(CRGC::Wall.color());
+		return color_vec;
+	}//end get_color_vec_u8()
 }
 
 pub struct RoomGenGroup {
@@ -336,39 +344,45 @@ impl RoomGenGroup {
 		// set up frames to show whether each drawing mode is active
 		let mut ux_draw_doors_btn = Button::default()
 			.with_label("Doors");
-		ux_draw_doors_btn.set_color(Color::Blue);
+		{let c = CRGC::Door.color();
+		ux_draw_doors_btn.set_color(Color::from_rgb(c.0,c.1,c.2));}
 		ux_draw_doors_btn.set_label_color(Color::White);
 		ux_draw_doors_btn.set_frame(FrameType::FlatBox);
 		ux_interior_flex_1.add(&ux_draw_doors_btn);
 
 		let mut ux_draw_room_start_btn = Button::default()
 			.with_label("Room Start");
-		ux_draw_room_start_btn.set_color(Color::Red);
+		{let c = CRGC::RoomStart.color();
+		ux_draw_room_start_btn.set_color(Color::from_rgb(c.0,c.1,c.2));}
 		ux_draw_room_start_btn.set_frame(FrameType::FlatBox);
 		ux_interior_flex_1.add(&ux_draw_room_start_btn);
 
 		let mut ux_draw_empty_btn = Button::default()
 			.with_label("Erase");
-		ux_draw_empty_btn.set_color(Color::White);
+		{let c = CRGC::Empty.color();
+		ux_draw_empty_btn.set_color(Color::from_rgb(c.0,c.1,c.2));}
 		ux_draw_empty_btn.set_frame(FrameType::FlatBox);
 		ux_interior_flex_1.add(&ux_draw_empty_btn);
 
 		// set up buttons to choose between different drawing modes
 		let mut ux_draw_wall_btn = Button::default()
 			.with_label("Wall");
-		ux_draw_wall_btn.set_color(Color::Black);
+		{let c = CRGC::Wall.color();
+		ux_draw_wall_btn.set_color(Color::from_rgb(c.0,c.1,c.2));}
 		ux_draw_wall_btn.set_label_color(Color::White);
 		ux_interior_flex_2.add(&ux_draw_wall_btn);
 		
 
 		let mut ux_draw_floor_btn = Button::default()
 			.with_label("Floor");
-		ux_draw_floor_btn.set_color(Color::from_rgb(140,140,140));
+		{let c = CRGC::Floor.color();
+		ux_draw_floor_btn.set_color(Color::from_rgb(c.0,c.1,c.2));}
 		ux_interior_flex_2.add(&ux_draw_floor_btn);
 
 		let mut ux_draw_stairs_btn = Button::default()
 			.with_label("Stairs");
-		ux_draw_stairs_btn.set_color(Color::Green);
+		{let c = CRGC::Stairs.color();
+		ux_draw_stairs_btn.set_color(Color::from_rgb(c.0,c.1,c.2));}
 		ux_interior_flex_2.add(&ux_draw_stairs_btn);
 
 		// draw state label frame
@@ -677,15 +691,7 @@ impl RoomGenGroup {
 				let sub_pixel_scale = {sub_pixel_scale.as_ref().borrow().clone()};
 				let brush_size = {brush_size.as_ref().borrow().clone()};
 				let draw_state = {draw_state.as_ref().borrow().clone()};
-				let draw_color = match draw_state {
-					DrawState::Wall => Color::Black,
-					DrawState::Floor => Color::from_rgb(140,140,140),
-					DrawState::Stair => Color::Green,
-					DrawState::Empty => Color::White,
-					DrawState::Door => Color::Blue,
-					DrawState::RoomStart => Color::Red,
-					DrawState::Disabled => Color::White,
-				};
+				let draw_color = draw_state.color();
 				let draw_size = match draw_state {
 					DrawState::Stair => pixel_scale,
 					DrawState::Disabled => 0,
