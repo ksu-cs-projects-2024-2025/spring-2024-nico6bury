@@ -94,27 +94,9 @@ impl CRG {
 	/// be made. If squares is not changed, this function will return Err.
 	pub fn grow_rooms_from_starts(&mut self) -> Result<(),String> {
 		/*
-		Essentially, algorithm needs to do following:
-		Identify all room starts, placing them in struct that saves locations
-		of each room generated from each start as a rectangle pointing to x,y,w,h
-		During each iteration of growth, get list of squares adjacent to room.
-		For each square adjacent to room, determine number of rooms adjacent,
-		by saving a "claim" based on room coordinates
-		For each adjacent square, if only one claim, add those squares to room claimant
-		if adjacent square has more than one claimant, then convert to wall, and tell all
-		claiming rooms to stop growing.
-		This continues until all rooms have been told to stop growing.
-
-		Thus, our room struct needs to save:
-		- x,y,w,h of current room rectangle
-		- initial x,y of room start (for identification purposes)
-		- whether or not room is currently allowed to grow
-		We also should implement functions:
-		- get list of square coords adjacent to room
-		- consume iter of square_claim to expand room
-		We also need a square_claim struct to save:
-		- x,y of current square
-		- list of references to rooms which hold a claim
+		TODO: The following alterations would likely improve this algorithm:
+		- check each square against squares_clone to ensure claims are not made against floors or walls
+		- check beginning room starts. If too many are close together, merge them
 		 */
 		
 		match &self.squares {
