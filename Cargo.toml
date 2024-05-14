@@ -1,0 +1,13 @@
+[package]
+name = "nice-map-generator"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+fltk = "^1.4"
+fltk-theme = "0.7.2"
+grid = "0.13.0"
+image = { version = "0.25.1", features = ["webp", "png", "jpeg", "bmp"], default-features = false }
+rand = "0.8.5"
